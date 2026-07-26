@@ -1,187 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綜合型英文測驗系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .tab-active {
-            border-bottom: 2px solid #3b82f6;
-            color: #3b82f6;
-        }
-        .blank-input {
-            width: 100px;
-            border-bottom: 2px solid #9ca3af;
-            outline: none;
-            text-align: center;
-            background: transparent;
-            font-weight: 600;
-        }
-        .blank-input:focus {
-            border-bottom-color: #3b82f6;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-    </style>
-</head>
-<body class="text-gray-800 h-screen flex flex-col">
-
-    <nav class="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10">
-        <h1 class="text-2xl font-bold text-blue-600">English Quiz Master</h1>
-        <div>
-            <button id="nav-student" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 focus:outline-none hidden">測驗模式</button>
-            <button id="nav-admin" class="px-4 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200 text-gray-700 focus:outline-none">管理後台</button>
-        </div>
-    </nav>
-
-    <main id="view-student" class="flex-grow flex flex-col items-center justify-center p-4 overflow-y-auto w-full max-w-4xl mx-auto hidden">
-        
-        <!-- Quiz Type Selection Screen (New) -->
-        <div id="quiz-selection" class="flex flex-col items-center justify-center w-full bg-white p-10 rounded-xl shadow-md max-w-2xl">
-            <h2 class="text-3xl font-bold mb-8 text-gray-800">請選擇測驗題型</h2>
-            <div class="flex flex-col space-y-4 w-full">
-                <button class="quiz-start-btn px-6 py-4 rounded-lg font-bold text-xl text-white bg-blue-500 hover:bg-blue-600 focus:outline-none shadow-md transition-colors" data-type="1">1. 克漏字測驗</button>
-                <button class="quiz-start-btn px-6 py-4 rounded-lg font-bold text-xl text-white bg-green-500 hover:bg-green-600 focus:outline-none shadow-md transition-colors" data-type="2">2. 聽寫測驗</button>
-                <button class="quiz-start-btn px-6 py-4 rounded-lg font-bold text-xl text-white bg-purple-500 hover:bg-purple-600 focus:outline-none shadow-md transition-colors" data-type="3">3. 翻譯測驗</button>
-            </div>
-        </div>
-
-        <!-- Quiz Container (Initially Hidden) -->
-        <div id="quiz-container" class="bg-white p-8 rounded-xl shadow-md w-full relative min-h-[300px] flex flex-col items-center justify-center text-center hidden">
-            <div id="quiz-loading" class="text-gray-500">載入題庫中...</div>
-            <div id="quiz-empty" class="text-gray-500 hidden">目前沒有題目，請至後台新增。</div>
-            
-            <div id="quiz-content" class="w-full hidden flex flex-col items-center">
-                <!-- Timer & Coins -->
-                <div class="flex items-center space-x-4 mb-4">
-                    <div id="q-timer" class="text-xl font-mono font-bold text-gray-600 bg-gray-100 px-6 py-2 rounded-full border border-gray-200 shadow-sm">00:00</div>
-                    <div class="text-xl font-bold text-yellow-600 bg-yellow-50 px-6 py-2 rounded-full border border-yellow-300 shadow-sm flex items-center" title="累積金幣">
-                        🪙 <span id="q-coins" class="ml-2">0</span>
-                    </div>
-                </div>
-
-                <!-- Question Number -->
-                <span id="q-number" class="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2">Question 1</span>
-                
-                <!-- Audio Button -->
-                <button id="btn-play-audio" class="mb-6 p-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none transition-colors hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                </button>
-
-                <!-- Prompt / Text -->
-                <div id="q-prompt" class="text-4xl md:text-5xl font-bold mb-8 leading-snug break-words w-full px-4"></div>
-
-                <!-- Action Buttons -->
-                <div class="mt-8 flex flex-col space-y-4 w-full max-w-md">
-                    <div id="self-score-btns" class="w-full flex space-x-4 hidden">
-                        <button id="btn-next-question" class="flex-1 px-4 py-4 bg-blue-500 text-white rounded-lg font-bold text-2xl hover:bg-blue-600 focus:outline-none shadow-md transition-colors">下一題 ➡️</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Score Display -->
-        <div id="quiz-summary" class="bg-white p-10 rounded-xl shadow-md w-full mt-4 text-center hidden">
-            <h2 class="text-4xl font-bold mb-4 text-gray-800">測驗結束！</h2>
-            <p class="text-xl text-gray-600 mb-8">恭喜你完成所有題目！</p>
-            <button id="btn-restart" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 shadow">返回首頁</button>
-        </div>
-    </main>
-
-    <main id="view-admin" class="flex-grow flex flex-col items-center justify-start p-6 w-full max-w-5xl mx-auto">
-        <div class="bg-white rounded-xl shadow-md w-full p-6">
-            <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">題庫與設定管理</h2>
-                <button id="btn-back-to-quiz" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-md font-medium hover:bg-blue-200 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                    </svg>
-                    返回測驗
-                </button>
-            </div>
-
-            <!-- Global Settings (TTS) -->
-            <div class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" />
-                    </svg>
-                    語音設定 (Text-to-Speech)
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">語音選擇</label>
-                        <select id="voice-select" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border">
-                            <option value="">載入中...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">語速 (Rate): <span id="rate-val">1.0</span></label>
-                        <input type="range" id="voice-rate" min="0.1" max="2" step="0.1" value="1" class="w-full mt-2">
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btn-test-voice" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 w-full font-medium">測試發音</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Bank Editors -->
-            <div class="space-y-6">
-                <!-- Type 1: Cloze -->
-                <div class="border rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型一：單字克漏字 (Vocabulary Cloze)</h3>
-                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入單字。系統會自動保留頭尾字母，中間挖空，並將發音設定為該單字。<br>例如: 輸入 <code class="bg-gray-100 p-1 rounded text-red-500">apple</code>，題目將自動顯示為 <code class="bg-gray-100 p-1 rounded text-red-500">a _ _ _ e</code></p>
-                        <textarea id="admin-q1" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="apple&#10;banana&#10;watermelon"></textarea>
-                    </div>
-                </div>
-
-                <!-- Variables Definition -->
-                <div class="border rounded-lg overflow-hidden border-blue-200">
-                    <div class="bg-blue-50 px-4 py-3 border-b border-blue-200 flex justify-between items-center">
-                        <h3 class="font-bold text-blue-800">隨機變數設定 (供題型二使用)</h3>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請設定可用於題目的隨機單字庫。請以等號分隔標籤與單字，單字間以逗號分隔。<br>格式：<code class="bg-gray-100 p-1 rounded text-red-500">[標籤]=單字1, 單字2, 單字3</code>。</p>
-                        <textarea id="admin-vars" class="w-full h-32 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="[name]=Tom, Mary, John, Alice&#10;[thing]=apple, book, pen, bag"></textarea>
-                    </div>
-                </div>
-
-                <!-- Type 2: Dictation -->
-                <div class="border rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型二：聽寫 (Dictation) / 聽問答題</h3>
-                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入完整的英文問句。若要帶入上面的隨機變數，請插入對應標籤（例如：<code class="bg-gray-100 p-1 rounded text-red-500">Where is [name] going?</code>）。<br>學生將聽到發音並需要寫出對應的答句。</p>
-                        <textarea id="admin-q2" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="What time is it right now?&#10;Where is [name] going?"></textarea>
-                    </div>
-                </div>
-
+<!-- ... existing code ... -->
                 <!-- Type 3: Translation -->
                 <div class="border rounded-lg overflow-hidden">
                     <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
@@ -189,70 +6,16 @@
                         <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
                     </div>
                     <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入中文。學生將看到中文並進行口頭或紙筆翻譯。</p>
-                        <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="今天天氣真好。&#10;你叫什麼名字？"></textarea>
+                        <p class="text-sm text-gray-600 mb-2">請輸入中文。若要帶入上面的隨機變數，請插入對應標籤（例如：<code class="bg-gray-100 p-1 rounded text-red-500">[name] 今天天氣真好。</code>）。<br>學生將看到中文並進行口頭或紙筆翻譯。</p>
+                        <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="今天天氣真好。&#10;[name] 叫什麼名字？"></textarea>
                     </div>
                 </div>
             </div>
-            
-            <div class="mt-6 flex justify-end">
-                <span id="save-status" class="mr-4 text-green-600 font-medium hidden flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                    儲存成功！
-                </span>
-                <button id="btn-save-admin" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" /></svg>
-                    儲存所有設定
-                </button>
-            </div>
-        </div>
-    </main>
+<!-- ... existing code ... -->
+```
 
-    <!-- Custom Modal instead of alert() -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
-            <h3 id="modal-title" class="text-xl font-bold mb-2">提示</h3>
-            <p id="modal-msg" class="text-gray-600 mb-6"></p>
-            <button id="btn-modal-close" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full">確定</button>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // 請將下方的 firebaseConfig 內容，替換成你在 Firebase 後台複製的設定
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDbENMxzyfGXHnTu9BQq364tOnS1HJxpLA",
-  authDomain: "engtest-e09ea.firebaseapp.com",
-  databaseURL: "https://engtest-e09ea-default-rtdb.firebaseio.com",
-  projectId: "engtest-e09ea",
-  storageBucket: "engtest-e09ea.firebasestorage.app",
-  messagingSenderId: "476694745806",
-  appId: "1:476694745806:web:e16fe9a34091981267369f",
-  measurementId: "G-RW5BWR7016"
-};
-        
-        let db, auth;
-        let settingsDocRef; 
-        let useLocalStorageFallback = false; // 新增：用於判斷是否切換為本地儲存
-
-        // State Management
-        let currentView = 'student'; // 'student' or 'admin'
-        let currentQuizType = '1'; // '1', '2', '3'
-        let quizData = {
-            '1': [], // Cloze
-            '2': [], // Dictation
-            '3': [],  // Translation
-            'vars': [] // Variables for dynamic questions
-        };
-        let ttsSettings = {
-            voiceURI: '',
-            rate: 1.0
-        };
-        
+```javascript:更新題型二與隨機變數功能:index.html
+// ... existing code ...
         // Quiz runtime variables
         let currentQuestions = [];
         let currentQuestionIndex = 0;
@@ -261,317 +24,15 @@ const firebaseConfig = {
         
         // Reward System variables (新增金幣與過關狀態)
         let currentCoins = { '1': 0, '2': 0, '3': 0 };
-        let typeHasWon = { '1': false, '2': false, '3': false };
+        let currentQuestionNumber = 1;
         let questionListenCount = 0;
 
         // DOM Elements
-        const viewStudent = document.getElementById('view-student');
-        const viewAdmin = document.getElementById('view-admin');
-        const navStudent = document.getElementById('nav-student');
-        const navAdmin = document.getElementById('nav-admin');
-        const btnBackToQuiz = document.getElementById('btn-back-to-quiz');
-        
-        const quizSelection = document.getElementById('quiz-selection');
-        const quizStartBtns = document.querySelectorAll('.quiz-start-btn');
-        const quizContainer = document.getElementById('quiz-container');
-        const quizLoading = document.getElementById('quiz-loading');
-        const quizEmpty = document.getElementById('quiz-empty');
-        const quizContent = document.getElementById('quiz-content');
-        
-        const qTimer = document.getElementById('q-timer');
-        const qNumber = document.getElementById('q-number');
-        const qPrompt = document.getElementById('q-prompt');
-        const btnPlayAudio = document.getElementById('btn-play-audio');
-        
-        const selfScoreBtns = document.getElementById('self-score-btns');
-        const btnNextQuestion = document.getElementById('btn-next-question');
-        
-        const quizSummary = document.getElementById('quiz-summary');
-        const btnRestart = document.getElementById('btn-restart');
+// ... existing code ...
+```
 
-        // Admin Elements
-        const adminQ1 = document.getElementById('admin-q1');
-        const adminQ2 = document.getElementById('admin-q2');
-        const adminQ3 = document.getElementById('admin-q3');
-        const adminVars = document.getElementById('admin-vars');
-        const voiceSelect = document.getElementById('voice-select');
-        const voiceRate = document.getElementById('voice-rate');
-        const rateVal = document.getElementById('rate-val');
-        const btnTestVoice = document.getElementById('btn-test-voice');
-        const btnSaveAdmin = document.getElementById('btn-save-admin');
-        const saveStatus = document.getElementById('save-status');
-
-        // Modal elements
-        const modal = document.getElementById('custom-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMsg = document.getElementById('modal-msg');
-        const btnModalClose = document.getElementById('btn-modal-close');
-
-        function showModal(msg, title = "提示") {
-            modalTitle.textContent = title;
-            modalMsg.textContent = msg;
-            modal.classList.remove('hidden');
-        }
-        btnModalClose.addEventListener('click', () => modal.classList.add('hidden'));
-
-        let synth = window.speechSynthesis;
-        let voices = [];
-
-        function populateVoiceList() {
-            voices = synth.getVoices().filter(v => v.lang.includes('en')); // Filter for English voices
-            voiceSelect.innerHTML = '';
-            
-            if (voices.length === 0) {
-                const option = document.createElement('option');
-                option.textContent = '未偵測到英文語音，系統使用預設發音。請嘗試使用 Chrome 瀏覽器。';
-                voiceSelect.appendChild(option);
-                return;
-            }
-
-            // Prefer Google voices if available
-            voices.sort((a, b) => {
-                if (a.name.includes('Google') && !b.name.includes('Google')) return -1;
-                if (!a.name.includes('Google') && b.name.includes('Google')) return 1;
-                return 0;
-            });
-
-            voices.forEach((voice) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.value = voice.voiceURI;
-                if (voice.voiceURI === ttsSettings.voiceURI || (ttsSettings.voiceURI === '' && voice.default)) {
-                    option.selected = true;
-                }
-                voiceSelect.appendChild(option);
-            });
-        }
-
-        populateVoiceList();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-
-        function speak(text) {
-            if (synth.speaking) {
-                synth.cancel(); // Stop current speech
-            }
-            if (text !== '') {
-                const utterThis = new SpeechSynthesisUtterance(text);
-                if (voiceSelect.value) {
-                    const selectedVoice = voices.find(v => v.voiceURI === voiceSelect.value) || voices.find(v => v.voiceURI === ttsSettings.voiceURI);
-                    if (selectedVoice) {
-                        utterThis.voice = selectedVoice;
-                    }
-                }
-                utterThis.rate = parseFloat(voiceRate.value || ttsSettings.rate);
-                utterThis.lang = 'en-US';
-                
-                // Visual feedback on button
-                btnPlayAudio.classList.add('bg-blue-300', 'animate-pulse');
-                utterThis.onend = () => {
-                    btnPlayAudio.classList.remove('bg-blue-300', 'animate-pulse');
-                };
-                utterThis.onerror = () => {
-                    btnPlayAudio.classList.remove('bg-blue-300', 'animate-pulse');
-                };
-
-                synth.speak(utterThis);
-            }
-        }
-
-        voiceRate.addEventListener('input', (e) => {
-            rateVal.textContent = e.target.value;
-        });
-
-        btnTestVoice.addEventListener('click', () => {
-            speak("Hello! This is a test of the English text to speech system.");
-        });
-
-        // 備用方案：使用 LocalStorage 儲存資料 (當 Firebase 權限不足時觸發)
-        function loadFromLocalStorage() {
-            const localData = localStorage.getItem('englishQuizData');
-            if (localData) {
-                const data = JSON.parse(localData);
-                quizData = data.quizData || quizData;
-                ttsSettings = data.ttsSettings || ttsSettings;
-            } else {
-                // 預設題目
-                quizData = {
-                    '1': ["apple", "banana", "watermelon"],
-                    '2': ["What time is it right now?", "Where is [name] going?"],
-                    '3': ["今天天氣真好。", "你叫什麼名字？"],
-                    'vars': ["[name]=Tom, Mary, John, Alice", "[thing]=apple, book, pen, bag"]
-                };
-            }
-            
-            // 更新後台 UI
-            adminQ1.value = quizData['1'].join('\n');
-            adminQ2.value = quizData['2'].join('\n');
-            adminQ3.value = quizData['3'].join('\n');
-            if (quizData['vars']) adminVars.value = quizData['vars'].join('\n');
-            
-            if (ttsSettings.voiceURI) voiceSelect.value = ttsSettings.voiceURI;
-            if (ttsSettings.rate) {
-                voiceRate.value = ttsSettings.rate;
-                rateVal.textContent = ttsSettings.rate;
-            }
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('englishQuizData', JSON.stringify({
-                quizData: quizData,
-                ttsSettings: ttsSettings,
-                updatedAt: new Date()
-            }));
-            saveStatus.classList.remove('hidden');
-            setTimeout(() => { saveStatus.classList.add('hidden'); }, 3000);
-        }
-
-        async function initFirebase() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Authenticate anonymously
-                await signInAnonymously(auth);
-                
-                /* 
-                 * 【部署提醒】
-                 * 當你部署到自己的 Firebase 時，請至 Firebase Console > Firestore Database > Rules
-                 * 將規則更改為允許讀寫，例如：
-                 * match /englishQuiz/sharedData { allow read, write: if true; }
-                 */
-                settingsDocRef = doc(db, 'englishQuiz', 'sharedData');
-                
-                await loadDataFromFirebase();
-                
-                // Initialize View
-                switchView('student');
-                
-            } catch (error) {
-                console.warn("Firebase 初始化錯誤或權限不足，自動切換為本地儲存模式", error);
-                useLocalStorageFallback = true;
-                loadFromLocalStorage();
-                switchView('student');
-            }
-        }
-
-        async function loadDataFromFirebase() {
-            try {
-                const docSnap = await getDoc(settingsDocRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    quizData = data.quizData || quizData;
-                    ttsSettings = data.ttsSettings || ttsSettings;
-                    
-                    // Update Admin UI with loaded data
-                    adminQ1.value = quizData['1'].join('\n');
-                    adminQ2.value = quizData['2'].join('\n');
-                    adminQ3.value = quizData['3'].join('\n');
-                    if (quizData['vars']) adminVars.value = quizData['vars'].join('\n');
-                    
-                    if (ttsSettings.voiceURI) {
-                        voiceSelect.value = ttsSettings.voiceURI;
-                    }
-                    if (ttsSettings.rate) {
-                        voiceRate.value = ttsSettings.rate;
-                        rateVal.textContent = ttsSettings.rate;
-                    }
-                } else {
-                    // Document doesn't exist yet, populate with default examples
-                    quizData = {
-                        '1': ["apple", "banana", "watermelon"],
-                        '2': ["What time is it right now?", "Where is [name] going?"],
-                        '3': ["今天天氣真好。", "你叫什麼名字？"],
-                        'vars': ["[name]=Tom, Mary, John, Alice", "[thing]=apple, book, pen, bag"]
-                    };
-                    adminQ1.value = quizData['1'].join('\n');
-                    adminQ2.value = quizData['2'].join('\n');
-                    adminQ3.value = quizData['3'].join('\n');
-                    adminVars.value = quizData['vars'].join('\n');
-                }
-            } catch (e) {
-                console.warn("讀取資料時被 Firebase 權限阻擋 (預覽環境正常現象)。切換為本地儲存。", e);
-                useLocalStorageFallback = true;
-                loadFromLocalStorage();
-            }
-        }
-
-        async function saveDataToFirebase() {
-            btnSaveAdmin.disabled = true;
-            btnSaveAdmin.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 儲存中...';
-            
-            // Parse inputs (remove empty lines and trim)
-            const parseTextarea = (val) => val.split('\n').map(s => s.trim()).filter(s => s !== '');
-            
-            quizData['1'] = parseTextarea(adminQ1.value);
-            quizData['2'] = parseTextarea(adminQ2.value);
-            quizData['3'] = parseTextarea(adminQ3.value);
-            quizData['vars'] = parseTextarea(adminVars.value);
-
-            ttsSettings = {
-                voiceURI: voiceSelect.value,
-                rate: parseFloat(voiceRate.value)
-            };
-
-            // 如果已經標記為本地儲存模式，直接存入 LocalStorage
-            if (useLocalStorageFallback) {
-                saveToLocalStorage();
-                btnSaveAdmin.disabled = false;
-                btnSaveAdmin.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" /></svg> 儲存所有設定';
-                return;
-            }
-
-            try {
-                await setDoc(settingsDocRef, {
-                    quizData: quizData,
-                    ttsSettings: ttsSettings,
-                    updatedAt: new Date()
-                });
-                
-                saveStatus.classList.remove('hidden');
-                setTimeout(() => { saveStatus.classList.add('hidden'); }, 3000);
-            } catch (e) {
-                console.warn("寫入資料時被 Firebase 權限阻擋。切換為本地儲存。", e);
-                useLocalStorageFallback = true;
-                saveToLocalStorage();
-            } finally {
-                btnSaveAdmin.disabled = false;
-                btnSaveAdmin.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" /></svg> 儲存所有設定';
-            }
-        }
-
-        function switchView(view) {
-            currentView = view;
-            if (view === 'student') {
-                viewStudent.classList.remove('hidden');
-                viewAdmin.classList.add('hidden');
-                navStudent.classList.add('hidden');
-                navAdmin.classList.remove('hidden');
-                initStudentView();
-            } else {
-                viewStudent.classList.add('hidden');
-                viewAdmin.classList.remove('hidden');
-                navStudent.classList.remove('hidden');
-                navAdmin.classList.add('hidden');
-                // Stop audio if playing when switching to admin
-                synth.cancel();
-                clearInterval(timerInterval); // Stop timer if running
-            }
-        }
-
-        navAdmin.addEventListener('click', () => switchView('admin'));
-        navStudent.addEventListener('click', () => switchView('student'));
-        btnBackToQuiz.addEventListener('click', () => switchView('student'));
-
-        function initStudentView() {
-            quizSelection.classList.remove('hidden');
-            quizContainer.classList.add('hidden');
-            quizSummary.classList.add('hidden');
-            clearInterval(timerInterval);
-        }
-
+```javascript:更新題型二與隨機變數功能:index.html
+// ... existing code ...
         function startQuiz(type) {
             currentQuizType = type;
             quizSelection.classList.add('hidden');
@@ -588,10 +49,13 @@ const firebaseConfig = {
                 quizEmpty.classList.add('hidden');
                 quizContent.classList.remove('hidden');
                 
-                // 【已修改】移除隨機打亂題目的程式碼，改為按照後台順序出題
-                // currentQuestions.sort(() => Math.random() - 0.5); 
+                // 題型二與題型三隨機打亂出題順序
+                if (currentQuizType === '2' || currentQuizType === '3') {
+                    currentQuestions.sort(() => Math.random() - 0.5); 
+                }
                 
                 currentQuestionIndex = 0;
+                currentQuestionNumber = 1;
                 
                 // 更新該題型的金幣顯示
                 document.getElementById('q-coins').textContent = currentCoins[currentQuizType];
@@ -599,23 +63,11 @@ const firebaseConfig = {
                 loadQuestion();
             }
         }
+// ... existing code ...
+```
 
-        quizStartBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                synth.cancel(); // Stop audio when switching tabs
-                startQuiz(e.target.dataset.type);
-            });
-        });
-
-        // Store answers for type 1
-        let currentFullSentence = "";
-
-        function formatTime(totalSeconds) {
-            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-            const s = (totalSeconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-        
+```javascript:更新題型二與隨機變數功能:index.html
+// ... existing code ...
         // 播放語音並紀錄次數
         function playAudioAndCount(text) {
             questionListenCount++;
@@ -624,63 +76,23 @@ const firebaseConfig = {
 
         function loadQuestion() {
             selfScoreBtns.classList.remove('hidden');
-            qNumber.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
+            qNumber.textContent = `Question ${currentQuestionNumber}`;
             
             questionListenCount = 0; // 重置該題的聆聽次數
             
             clearInterval(timerInterval);
-            secondsElapsed = 0;
-            qTimer.textContent = "00:00";
-            qTimer.classList.remove('text-red-500');
-            timerInterval = setInterval(() => {
-                secondsElapsed++;
-                qTimer.textContent = formatTime(secondsElapsed);
-                if(secondsElapsed >= 60) qTimer.classList.add('text-red-500'); // Turn red after 1 min
-            }, 1000);
+// ... existing code ...
+```
 
-            const rawData = currentQuestions[currentQuestionIndex];
-            
-            // Reset visibility
-            btnPlayAudio.classList.add('hidden');
-            
-            if (currentQuizType === '1') {
-                setupClozeTest(rawData);
-            } else if (currentQuizType === '2') {
-                setupDictationTest(rawData);
-            } else if (currentQuizType === '3') {
-                setupTranslationTest(rawData);
-            }
-        }
-
-        function setupClozeTest(word) {
-            btnPlayAudio.classList.remove('hidden');
-            
-            currentFullSentence = word.trim(); // Full word for TTS and Answer
-            
-            let clozeHTML = '';
-            if (currentFullSentence.length <= 1) {
-                clozeHTML = '_';
-            } else if (currentFullSentence.length === 2) {
-                clozeHTML = currentFullSentence[0] + ' _';
-            } else {
-                clozeHTML = currentFullSentence[0];
-                for(let i = 1; i < currentFullSentence.length - 1; i++) {
-                    clozeHTML += ' <span class="text-gray-400">_</span> ';
-                }
-                clozeHTML += currentFullSentence[currentFullSentence.length - 1];
-            }
-            
+```javascript:更新題型二與隨機變數功能:index.html
+// ... existing code ...
             qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-5xl md:text-7xl break-words leading-snug">${clozeHTML}</div>`;
             btnPlayAudio.onclick = () => playAudioAndCount(currentFullSentence);
         }
 
-        function setupDictationTest(sentence) {
-            btnPlayAudio.classList.remove('hidden');
-            qPrompt.innerHTML = `<div class="text-gray-500 italic text-2xl md:text-3xl mb-4">請點擊上方發音按鈕聆聽問句，並寫出（或口述）對應的答句。</div>`;
-            
-            let processedSentence = sentence.trim();
-            
-            // 解析變數字典 (Parse variables dictionary)
+        // 獨立出變數替換的功能，讓多個題型共用
+        function replaceVariables(text) {
+            let processedText = text.trim();
             let varDict = {};
             if (quizData['vars'] && quizData['vars'].length > 0) {
                 quizData['vars'].forEach(line => {
@@ -692,73 +104,64 @@ const firebaseConfig = {
                     }
                 });
             }
-            
-            // 替換標籤為隨機單字 (Replace [tag] with random value)
-            processedSentence = processedSentence.replace(/\[.*?\]/g, function(match) {
+            return processedText.replace(/\[.*?\]/g, function(match) {
                 if (varDict[match] && varDict[match].length > 0) {
                     let randomIndex = Math.floor(Math.random() * varDict[match].length);
                     return varDict[match][randomIndex];
                 }
-                return match; // 如果找不到對應的標籤，保留原樣
+                return match; 
             });
+        }
 
-            currentFullSentence = processedSentence; // Store resolved question
+        function setupDictationTest(sentence) {
+            btnPlayAudio.classList.remove('hidden');
+            qPrompt.innerHTML = `<div class="text-gray-500 italic text-2xl md:text-3xl mb-4">請點擊上方發音按鈕聆聽問句，並寫出（或口述）對應的答句。</div>`;
+            
+            currentFullSentence = replaceVariables(sentence); // 套用隨機變數
             
             btnPlayAudio.onclick = () => playAudioAndCount(currentFullSentence);
         }
 
         function setupTranslationTest(data) {
-            qPrompt.innerHTML = `<div class="text-4xl md:text-6xl text-gray-800 leading-snug break-words">${data.trim()}</div>`;
+            let processedSentence = replaceVariables(data); // 套用隨機變數
+            qPrompt.innerHTML = `<div class="text-4xl md:text-6xl text-gray-800 leading-snug break-words">${processedSentence}</div>`;
         }
 
         function nextQuestion() {
             // 計算金幣獎勵與懲罰
-            let coinsEarned = 0;
-            let listenPenalty = Math.max(0, questionListenCount - 1); // 第一次聽不扣，第二次起每聽一次扣一分
+// ... existing code ...
+```
 
-            if (currentQuizType === '1') {
-                // 題型一：15秒內5枚，超過則為3枚
-                let timeReward = (secondsElapsed <= 15) ? 5 : 3;
-                coinsEarned = timeReward - listenPenalty;
-            } else {
-                // 題型二與三：30秒內5枚，超過30秒每增加10秒扣1枚
-                let timePenalty = (secondsElapsed <= 30) ? 0 : Math.floor((secondsElapsed - 31) / 10) + 1;
-                let timeReward = Math.max(0, 5 - timePenalty); // 最低基礎得分為 0
-                coinsEarned = timeReward - listenPenalty;
-            }
-
+```javascript:更新題型二與隨機變數功能:index.html
+// ... existing code ...
             // 加總並確保總金幣不為負數 (最低跌到 0 枚)
+            let previousCoins = currentCoins[currentQuizType];
             currentCoins[currentQuizType] = Math.max(0, currentCoins[currentQuizType] + coinsEarned);
             
             // 更新 UI 顯示
             document.getElementById('q-coins').textContent = currentCoins[currentQuizType];
 
-            // 檢查過關條件 (50枚)
-            if (currentCoins[currentQuizType] >= 50 && !typeHasWon[currentQuizType]) {
-                typeHasWon[currentQuizType] = true;
-                showModal("太棒了！您已經在本次測驗中累積獲得 50 枚金幣，順利過關！🎉", "🏆 過關提示");
+            // 檢查過關條件 (每 50 枚金幣提醒一次，如 50, 100, 150...)
+            let previousMilestone = Math.floor(previousCoins / 50);
+            let currentMilestone = Math.floor(currentCoins[currentQuizType] / 50);
+
+            if (currentMilestone > previousMilestone && currentMilestone > 0) {
+                showModal(`太棒了！您已經在本次測驗中累積獲得 ${currentMilestone * 50} 枚金幣，繼續保持！🎉`, "🏆 獎勵提示");
             }
 
             currentQuestionIndex++;
-            if (currentQuestionIndex < currentQuestions.length) {
-                loadQuestion();
-            } else {
-                // Show Summary
-                quizContent.classList.add('hidden');
-                quizSummary.classList.remove('hidden');
+            currentQuestionNumber++;
+            
+            // 無限題庫邏輯：如果該輪題目出完了，重新洗牌（題型二、三）或從頭開始（題型一）
+            if (currentQuestionIndex >= currentQuestions.length) {
+                currentQuestionIndex = 0;
+                if (currentQuizType === '2' || currentQuizType === '3') {
+                    currentQuestions.sort(() => Math.random() - 0.5);
+                }
             }
+            
+            loadQuestion();
         }
 
         // Event Listeners
-        btnNextQuestion.addEventListener('click', nextQuestion);
-        btnRestart.addEventListener('click', initStudentView);
-        btnSaveAdmin.addEventListener('click', saveDataToFirebase);
-
-        // Initialize App
-        window.addEventListener('load', () => {
-            initFirebase();
-        });
-
-    </script>
-</body>
-</html>
+// ... existing code ...
