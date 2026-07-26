@@ -84,27 +84,22 @@
                 </button>
 
                 <!-- Prompt / Text -->
-                <div id="q-prompt" class="text-2xl font-medium mb-6 leading-relaxed"></div>
-                
-                <!-- Answer Reveal Area -->
-                <div id="q-answer-reveal" class="mt-4 font-bold text-2xl text-blue-600 hidden bg-blue-50 p-6 rounded-lg w-full"></div>
+                <div id="q-prompt" class="text-4xl md:text-5xl font-bold mb-8 leading-snug break-words w-full px-4"></div>
 
                 <!-- Action Buttons -->
                 <div class="mt-8 flex flex-col space-y-4 w-full max-w-md">
-                    <button id="btn-show-answer" class="w-full px-8 py-4 bg-gray-800 text-white rounded-lg font-bold text-lg hover:bg-gray-900 focus:outline-none shadow-md transition-colors hidden">顯示答案</button>
                     <div id="self-score-btns" class="w-full flex space-x-4 hidden">
-                        <button id="btn-correct" class="flex-1 px-4 py-4 bg-green-500 text-white rounded-lg font-bold text-lg hover:bg-green-600 focus:outline-none shadow-md transition-colors">答對了 😃</button>
-                        <button id="btn-incorrect" class="flex-1 px-4 py-4 bg-red-500 text-white rounded-lg font-bold text-lg hover:bg-red-600 focus:outline-none shadow-md transition-colors">答錯了 😢</button>
+                        <button id="btn-next-question" class="flex-1 px-4 py-4 bg-blue-500 text-white rounded-lg font-bold text-2xl hover:bg-blue-600 focus:outline-none shadow-md transition-colors">下一題 ➡️</button>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Score Display -->
-        <div id="quiz-summary" class="bg-white p-8 rounded-xl shadow-md w-full mt-4 text-center hidden">
-            <h2 class="text-2xl font-bold mb-2 text-gray-800">測驗結束！</h2>
-            <p class="text-lg text-gray-600 mb-6">你的得分是： <span id="final-score" class="font-bold text-blue-600 text-3xl"></span> / <span id="total-score" class="font-bold"></span></p>
-            <button id="btn-restart" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">重新測驗</button>
+        <div id="quiz-summary" class="bg-white p-10 rounded-xl shadow-md w-full mt-4 text-center hidden">
+            <h2 class="text-4xl font-bold mb-4 text-gray-800">測驗結束！</h2>
+            <p class="text-xl text-gray-600 mb-8">恭喜你完成所有題目！</p>
+            <button id="btn-restart" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 shadow">返回首頁</button>
         </div>
     </main>
 
@@ -150,12 +145,12 @@
                 <!-- Type 1: Cloze -->
                 <div class="border rounded-lg overflow-hidden">
                     <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型一：克漏字 (Cloze Test)</h3>
+                        <h3 class="font-bold text-gray-700">題型一：單字克漏字 (Vocabulary Cloze)</h3>
                         <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
                     </div>
                     <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入完整句子，並將要挖空的單字用 <strong>[中括號]</strong> 包起來。系統會自動隱藏括號內的字，並將發音設定為整句。<br>例如: <code class="bg-gray-100 p-1 rounded text-red-500">I have an [apple] in my bag.</code></p>
-                        <textarea id="admin-q1" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="The quick brown [fox] jumps over the lazy [dog].&#10;She [went] to the store yesterday."></textarea>
+                        <p class="text-sm text-gray-600 mb-2">請輸入單字。系統會自動保留頭尾字母，中間挖空，並將發音設定為該單字。<br>例如: 輸入 <code class="bg-gray-100 p-1 rounded text-red-500">apple</code>，題目將自動顯示為 <code class="bg-gray-100 p-1 rounded text-red-500">a _ _ _ e</code></p>
+                        <textarea id="admin-q1" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="apple&#10;banana&#10;watermelon"></textarea>
                     </div>
                 </div>
 
@@ -178,8 +173,8 @@
                         <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
                     </div>
                     <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入中文與英文，中間用 <strong>| (直線符號)</strong> 隔開。<br>例如: <code class="bg-gray-100 p-1 rounded text-red-500">這是一個蘋果 | This is an apple</code></p>
-                        <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="今天天氣真好。 | The weather is very nice today.&#10;你叫什麼名字？ | What is your name?"></textarea>
+                        <p class="text-sm text-gray-600 mb-2">請輸入中文。學生將看到中文並進行口頭或紙筆翻譯。</p>
+                        <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="今天天氣真好。&#10;你叫什麼名字？"></textarea>
                     </div>
                 </div>
             </div>
@@ -266,16 +261,11 @@ const firebaseConfig = {
         const qNumber = document.getElementById('q-number');
         const qPrompt = document.getElementById('q-prompt');
         const btnPlayAudio = document.getElementById('btn-play-audio');
-        const qAnswerReveal = document.getElementById('q-answer-reveal');
         
-        const btnShowAnswer = document.getElementById('btn-show-answer');
         const selfScoreBtns = document.getElementById('self-score-btns');
-        const btnCorrect = document.getElementById('btn-correct');
-        const btnIncorrect = document.getElementById('btn-incorrect');
+        const btnNextQuestion = document.getElementById('btn-next-question');
         
         const quizSummary = document.getElementById('quiz-summary');
-        const finalScoreSpan = document.getElementById('final-score');
-        const totalScoreSpan = document.getElementById('total-score');
         const btnRestart = document.getElementById('btn-restart');
 
         // Admin Elements
@@ -385,9 +375,9 @@ const firebaseConfig = {
             } else {
                 // 預設題目
                 quizData = {
-                    '1': ["The quick brown [fox] jumps over the lazy [dog].", "She [went] to the store yesterday."],
+                    '1': ["apple", "banana", "watermelon"],
                     '2': ["What time is it right now?", "I am looking forward to seeing you."],
-                    '3': ["今天天氣真好。 | The weather is very nice today.", "你叫什麼名字？ | What is your name?"]
+                    '3': ["今天天氣真好。", "你叫什麼名字？"]
                 };
             }
             
@@ -466,9 +456,9 @@ const firebaseConfig = {
                 } else {
                     // Document doesn't exist yet, populate with default examples
                     quizData = {
-                        '1': ["The quick brown [fox] jumps over the lazy [dog].", "She [went] to the store yesterday."],
+                        '1': ["apple", "banana", "watermelon"],
                         '2': ["What time is it right now?", "I am looking forward to seeing you."],
-                        '3': ["今天天氣真好。 | The weather is very nice today.", "你叫什麼名字？ | What is your name?"]
+                        '3': ["今天天氣真好。", "你叫什麼名字？"]
                     };
                     adminQ1.value = quizData['1'].join('\n');
                     adminQ2.value = quizData['2'].join('\n');
@@ -594,10 +584,7 @@ const firebaseConfig = {
         }
 
         function loadQuestion() {
-            qAnswerReveal.classList.add('hidden');
-            qAnswerReveal.innerHTML = '';
-            btnShowAnswer.classList.remove('hidden');
-            selfScoreBtns.classList.add('hidden');
+            selfScoreBtns.classList.remove('hidden');
             qNumber.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
             
             clearInterval(timerInterval);
@@ -624,66 +611,38 @@ const firebaseConfig = {
             }
         }
 
-        function setupClozeTest(sentence) {
+        function setupClozeTest(word) {
             btnPlayAudio.classList.remove('hidden');
             
-            // Parse the sentence to find brackets [word]
-            const regex = /\[(.*?)\]/g;
-            currentFullSentence = sentence.replace(regex, (match, p1) => p1); // Full sentence for TTS
+            currentFullSentence = word.trim(); // Full word for TTS and Answer
             
-            let htmlPrompt = sentence.replace(regex, (match, p1) => {
-                // Return a visual blank line instead of an input
-                return `<span class="inline-block min-w-[60px] border-b-2 border-gray-500 mx-2 mb-[-4px]"></span>`;
-            });
-            
-            if (!sentence.match(regex)) {
-                currentFullSentence = sentence;
-                htmlPrompt = `<div>${sentence}</div><div class="mt-4 text-sm text-red-500">（後台未設定括號 []，將整句顯示）</div>`;
+            let clozeHTML = '';
+            if (currentFullSentence.length <= 1) {
+                clozeHTML = '_';
+            } else if (currentFullSentence.length === 2) {
+                clozeHTML = currentFullSentence[0] + ' _';
+            } else {
+                clozeHTML = currentFullSentence[0];
+                for(let i = 1; i < currentFullSentence.length - 1; i++) {
+                    clozeHTML += ' <span class="text-gray-400">_</span> ';
+                }
+                clozeHTML += currentFullSentence[currentFullSentence.length - 1];
             }
             
-            qPrompt.innerHTML = htmlPrompt;
+            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-5xl md:text-6xl">${clozeHTML}</div>`;
             btnPlayAudio.onclick = () => speak(currentFullSentence);
         }
 
         function setupDictationTest(sentence) {
             btnPlayAudio.classList.remove('hidden');
-            qPrompt.innerHTML = `<span class="text-gray-500 italic text-xl">請點擊發音按鈕，並在心中拼寫出聽到的句子。</span>`;
+            qPrompt.innerHTML = `<div class="text-gray-500 italic text-2xl md:text-3xl mb-4">請點擊上方發音按鈕，並在心中拼寫出聽到的句子。</div>`;
             currentFullSentence = sentence.trim(); // Store expected answer
             
             btnPlayAudio.onclick = () => speak(currentFullSentence);
         }
 
         function setupTranslationTest(data) {
-            // Parse format: Chinese | English
-            const parts = data.split('|');
-            const chinese = parts[0] ? parts[0].trim() : "格式錯誤，請檢查後台";
-            currentFullSentence = parts[1] ? parts[1].trim() : ""; // Store expected answer
-            
-            qPrompt.innerHTML = `<div class="text-3xl text-gray-800">${chinese}</div>`;
-        }
-
-        function showAnswer() {
-            clearInterval(timerInterval); // Stop the timer
-            
-            btnShowAnswer.classList.add('hidden');
-            selfScoreBtns.classList.remove('hidden');
-            qAnswerReveal.classList.remove('hidden');
-            
-            if (currentQuizType === '1') {
-                // Show the sentence with highlighted answers
-                const regex = /\[(.*?)\]/g;
-                let revealedHTML = currentQuestions[currentQuestionIndex].replace(regex, (match, p1) => {
-                    return `<span class="text-green-600 underline decoration-2 underline-offset-4 mx-1">${p1}</span>`;
-                });
-                qAnswerReveal.innerHTML = revealedHTML;
-            } else {
-                qAnswerReveal.innerHTML = currentFullSentence;
-            }
-        }
-        
-        function handleSelfScore(isCorrect) {
-            if (isCorrect) score++;
-            nextQuestion();
+            qPrompt.innerHTML = `<div class="text-4xl md:text-5xl text-gray-800 leading-snug">${data.trim()}</div>`;
         }
 
         function nextQuestion() {
@@ -694,15 +653,11 @@ const firebaseConfig = {
                 // Show Summary
                 quizContent.classList.add('hidden');
                 quizSummary.classList.remove('hidden');
-                document.getElementById('final-score').textContent = score;
-                document.getElementById('total-score').textContent = currentQuestions.length;
             }
         }
 
         // Event Listeners
-        btnShowAnswer.addEventListener('click', showAnswer);
-        btnCorrect.addEventListener('click', () => handleSelfScore(true));
-        btnIncorrect.addEventListener('click', () => handleSelfScore(false));
+        btnNextQuestion.addEventListener('click', nextQuestion);
         btnRestart.addEventListener('click', initStudentView);
         btnSaveAdmin.addEventListener('click', saveDataToFirebase);
 
