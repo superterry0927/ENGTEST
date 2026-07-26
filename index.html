@@ -51,7 +51,7 @@
                 <div class="text-5xl mr-6">🎧</div>
                 <div class="text-left text-gray-700">
                     <h3 class="text-2xl font-bold mb-1">題型二：聽力與答句</h3>
-                    <p class="text-gray-500">聆聽英文問句，並寫下（或口述）回答。</p>
+                    <p class="text-gray-500">聆聽問句發音，寫下對應的答句。</p>
                 </div>
             </button>
             
@@ -81,7 +81,7 @@
             </div>
 
             <!-- 題目與互動區 -->
-            <div class="p-8 flex flex-col items-center justify-center min-h-[350px] text-center">
+            <div class="p-8 flex flex-col items-center justify-center min-h-[450px] text-center">
                 
                 <!-- 發音按鈕 -->
                 <button id="btn-play-audio" class="mb-8 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full p-6 shadow-md transition transform hover:scale-110 focus:outline-none">
@@ -96,7 +96,7 @@
                 </div>
 
                 <!-- 下一題按鈕 -->
-                <button id="btn-next" onclick="nextQuestion()" class="w-full max-w-md bg-blue-500 hover:bg-blue-600 text-white font-bold py-5 px-8 rounded-xl shadow-lg text-2xl transition transform hover:scale-105">
+                <button id="btn-next" onclick="nextQuestion()" class="w-full max-w-2xl bg-blue-500 hover:bg-blue-600 text-white font-bold py-6 px-8 rounded-2xl shadow-lg text-3xl transition transform hover:scale-105 mt-auto">
                     下一題 ➡️
                 </button>
             </div>
@@ -151,7 +151,7 @@
                         <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
                     </div>
                     <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入單字。系統會自動隱藏中間字母（例如 <code>apple</code> 變成 <code>a _ _ _ e</code>）。</p>
+                        <p class="text-sm text-gray-600 mb-2">請輸入單字或片語。系統會自動保留頭尾字母並隱藏中間部分（例如 <code>apple</code> 變成 <code>a _ _ _ e</code>）。</p>
                         <textarea id="admin-q1" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="apple&#10;banana&#10;computer"></textarea>
                     </div>
                 </div>
@@ -175,7 +175,7 @@
                         <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
                     </div>
                     <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入中文句子，可插入變數標籤。學生看中文翻譯。</p>
+                        <p class="text-sm text-gray-600 mb-2">請輸入中文句子，可插入變數標籤。學生需看中文翻譯成英文。</p>
                         <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="[name] 今天天氣真好。&#10;這是一本好書。"></textarea>
                     </div>
                 </div>
@@ -190,21 +190,20 @@
 
     </main>
 
-    <!-- 自訂 Alert Modal -->
+    <!-- 自訂 Alert Modal (金幣獎勵) -->
     <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="custom-modal-content">
             <div class="p-6 text-center">
                 <div id="modal-icon" class="text-6xl mb-4">🏆</div>
                 <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-2">標題</h3>
-                <p id="modal-text" class="text-gray-600 mb-6">內容文字</p>
-                <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition">
+                <p id="modal-text" class="text-gray-600 mb-6 font-bold text-lg">內容文字</p>
+                <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition text-xl">
                     太棒了，繼續！
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 引入 Firebase v9 模組化 SDK (透過 CDN) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -213,8 +212,7 @@
         // ==========================================
         // ⚠️ 請在這裡填入你的 Firebase 專案設定 ⚠️
         // ==========================================
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyDbENMxzyfGXHnTu9BQq364tOnS1HJxpLA",
   authDomain: "engtest-e09ea.firebaseapp.com",
   databaseURL: "https://engtest-e09ea-default-rtdb.firebaseio.com",
@@ -229,7 +227,6 @@ const firebaseConfig = {
         let db;
         let useLocalStorage = false;
         
-        // 嘗試初始化 Firebase，若設定不完整或權限阻擋，則降級到 LocalStorage
         try {
             if (firebaseConfig.apiKey === "YOUR_API_KEY") {
                 throw new Error("尚未設定 Firebase Config，自動切換至本機儲存模式。");
@@ -238,7 +235,6 @@ const firebaseConfig = {
             db = getFirestore(app);
             const auth = getAuth(app);
             
-            // 匿名登入 (Firestore 規則需設定 allow read, write: if request.auth != null;)
             signInAnonymously(auth).then(() => {
                 document.getElementById('db-status').textContent = '🟢 雲端資料庫已連線';
                 document.getElementById('db-status').classList.replace('bg-gray-700', 'bg-green-600');
@@ -247,7 +243,6 @@ const firebaseConfig = {
                 console.error("Firebase 登入失敗:", error);
                 fallbackToLocal("權限阻擋，改用本機儲存");
             });
-
         } catch (error) {
             console.warn(error.message);
             fallbackToLocal("本機儲存模式 (未連線雲端)");
@@ -274,9 +269,8 @@ const firebaseConfig = {
         // 金幣與聆聽次數
         let currentCoins = { '1': 0, '2': 0, '3': 0 };
         let questionListenCount = 0;
-        let currentFullSentence = ""; // 紀錄替換變數後的完整句子，供發音使用
+        let currentFullSentence = ""; 
 
-        // DOM Elements
         const viewSelection = document.getElementById('quiz-selection');
         const viewQuiz = document.getElementById('quiz-container');
         const viewLoading = document.getElementById('quiz-loading');
@@ -303,7 +297,6 @@ const firebaseConfig = {
                     const saved = localStorage.getItem('englishQuizData');
                     if (saved) {
                         try {
-                            // 加入型態檢查，確保只有正確的物件才會被套用
                             const parsed = JSON.parse(saved);
                             if (parsed && typeof parsed === 'object') {
                                 window.quizData = { ...window.quizData, ...parsed };
@@ -319,7 +312,6 @@ const firebaseConfig = {
                     }
                 }
                 
-                // 確保 quizData 絕對不會是 undefined 或 null
                 if (!window.quizData) {
                     window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
                 }
@@ -353,10 +345,7 @@ const firebaseConfig = {
         };
 
         function populateAdminFields() {
-            // 在渲染後台前，做最後一道防線檢查
-            if (!window.quizData) {
-                window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
-            }
+            if (!window.quizData) window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
             document.getElementById('admin-vars').value = (window.quizData['vars'] || []).join('\n');
             document.getElementById('admin-q1').value = (window.quizData['1'] || []).join('\n');
             document.getElementById('admin-q2').value = (window.quizData['2'] || []).join('\n');
@@ -385,7 +374,13 @@ const firebaseConfig = {
         window.speak = function(text) {
             if (synth.speaking) synth.cancel();
             if (text === '') return;
-            const utterThis = new SpeechSynthesisUtterance(text);
+            
+            // 【修復 a 的發音問題】 
+            // 替換單獨出現的 A 或 a 為小寫 a，避免語音引擎把它當作「大寫字母 A(ㄟ)」來發音
+            // 若為 Chrome/Google TTS，遇到小寫獨立 a 通常會正確發音為冠詞 /ə/ (呃)
+            let processedText = text.replace(/\bA\b/g, 'a');
+
+            const utterThis = new SpeechSynthesisUtterance(processedText);
             const selectedOption = voiceSelect.selectedOptions[0].value;
             utterThis.voice = voices[selectedOption];
             utterThis.rate = parseFloat(rateSlider.value);
@@ -410,7 +405,6 @@ const firebaseConfig = {
             viewSelection.classList.remove('hidden');
         };
 
-        // 自訂 Modal 控制
         window.showModal = function(text, title = "提示", icon = "🏆") {
             const modal = document.getElementById('custom-modal');
             const content = document.getElementById('custom-modal-content');
@@ -451,7 +445,7 @@ const firebaseConfig = {
             });
         }
 
-        // 單字克漏字處理 (例如 apple -> a _ _ _ e)
+        // 單字克漏字處理：保留首尾，中間挖空 (例如 apple -> a _ _ _ e)
         function makeClozeWord(word) {
             let w = word.trim();
             if(w.length <= 1) return '_';
@@ -472,11 +466,8 @@ const firebaseConfig = {
             } else {
                 viewQuiz.classList.remove('hidden');
                 
-                // 題型二與三：一開始就隨機打亂
-                if (currentQuizType === '2' || currentQuizType === '3') {
-                    currentQuestions.sort(() => Math.random() - 0.5); 
-                }
-                // 題型一：照後台順序出題 (不打亂)
+                // 【修正：三種題型全部都打亂順序 (隨機出題)】
+                currentQuestions.sort(() => Math.random() - 0.5); 
                 
                 currentQuestionIndex = 0;
                 currentQuestionNumber = 1;
@@ -503,9 +494,14 @@ const firebaseConfig = {
             if (currentQuizType === '1') {
                 // 題型一：單字克漏字
                 btnPlayAudio.classList.remove('hidden');
-                currentFullSentence = rawData.trim();
+                currentFullSentence = replaceVariables(rawData.trim());
+                
+                // 處理句子中每個單字，保留首尾，中間隱藏
                 let clozeWords = currentFullSentence.split(' ').map(makeClozeWord).join('&nbsp;&nbsp;&nbsp;');
-                qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-7xl md:text-8xl break-words leading-snug font-bold">${clozeWords}</div>`;
+                
+                // 放大字體
+                qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-7xl md:text-8xl break-words leading-snug font-bold mb-4">${clozeWords}</div>`;
+                
                 btnPlayAudio.onclick = () => {
                     questionListenCount++;
                     speak(currentFullSentence);
@@ -515,17 +511,22 @@ const firebaseConfig = {
                 // 題型二：聽力答句
                 btnPlayAudio.classList.remove('hidden');
                 currentFullSentence = replaceVariables(rawData);
-                qPrompt.innerHTML = `<div class="text-gray-500 italic text-3xl md:text-4xl mb-4 font-semibold">請點擊上方發音按鈕聆聽問句，並寫出（或口述）答句。</div>`;
+                qPrompt.innerHTML = `
+                    <div class="text-gray-500 italic text-4xl md:text-5xl mb-4 font-semibold leading-snug break-words">
+                        請聆聽發音，並寫出對應的答句。
+                    </div>`;
                 btnPlayAudio.onclick = () => {
                     questionListenCount++;
                     speak(currentFullSentence);
                 };
             }
             else if (currentQuizType === '3') {
-                // 題型三：翻譯
+                // 題型三：翻譯 (純中文)
                 btnPlayAudio.classList.add('hidden'); // 隱藏發音按鈕
                 let processedSentence = replaceVariables(rawData);
-                qPrompt.innerHTML = `<div class="text-5xl md:text-6xl text-gray-800 leading-snug break-words font-bold">${processedSentence}</div>`;
+                
+                // 放大字體，支援斷行
+                qPrompt.innerHTML = `<div class="text-6xl md:text-7xl text-gray-800 leading-snug break-words font-bold mb-4">${processedSentence}</div>`;
             }
         }
 
@@ -533,12 +534,12 @@ const firebaseConfig = {
             clearInterval(timerInterval);
             if (synth.speaking) synth.cancel();
 
-            // 計算金幣
+            // === 計算金幣 ===
             let baseScore = 0;
             let timePenalty = 0;
             
             if (currentQuizType === '1') {
-                // 題型一：15秒內5枚，超過3枚
+                // 題型一：15秒內5枚，超過得3枚
                 baseScore = (secondsElapsed <= 15) ? 5 : 3;
             } else {
                 // 題型二、三：30秒內5枚。超過後每10秒扣1枚
@@ -553,11 +554,13 @@ const firebaseConfig = {
             if (currentQuizType === '3') listenPenalty = 0; // 題型三無聆聽
             
             let earnedCoins = baseScore - timePenalty - listenPenalty;
+            // 單題得分最低不為負數 (最慘得 0 分)
+            earnedCoins = Math.max(0, earnedCoins);
             
-            // 紀錄舊金幣計算是否跨越里程碑
+            // 紀錄舊金幣計算是否跨越里程碑 (50的倍數)
             let previousCoins = currentCoins[currentQuizType];
             
-            // 更新總金幣 (最低不小於0)
+            // 更新總金幣 (總金幣最低 0)
             currentCoins[currentQuizType] = Math.max(0, currentCoins[currentQuizType] + earnedCoins);
             qCoins.textContent = currentCoins[currentQuizType];
 
@@ -566,19 +569,17 @@ const firebaseConfig = {
             let currentMilestone = Math.floor(currentCoins[currentQuizType] / 50);
 
             if (currentMilestone > previousMilestone && currentMilestone >= 1) {
-                showModal(`太棒了！您已經在本次測驗中累積獲得 ${currentMilestone * 50} 枚金幣，繼續保持！`, "🎉 達到目標里程碑", "🪙");
+                showModal(`您已經在本次測驗中累積獲得 ${currentMilestone * 50} 枚金幣！`, "🎉 達到目標里程碑", "🪙");
             }
 
-            // 無限出題機制
+            // === 無限出題機制 ===
             currentQuestionIndex++;
             currentQuestionNumber++;
             
             if (currentQuestionIndex >= currentQuestions.length) {
                 currentQuestionIndex = 0;
-                // 題型二與三重新洗牌，題型一則照原本順序重頭開始
-                if (currentQuizType === '2' || currentQuizType === '3') {
-                    currentQuestions.sort(() => Math.random() - 0.5);
-                }
+                // 一輪結束後重新洗牌
+                currentQuestions.sort(() => Math.random() - 0.5);
             }
             
             loadQuestion();
