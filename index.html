@@ -70,8 +70,13 @@
             <div id="quiz-empty" class="text-gray-500 hidden">目前沒有題目，請至後台新增。</div>
             
             <div id="quiz-content" class="w-full hidden flex flex-col items-center">
-                <!-- Timer -->
-                <div id="q-timer" class="text-xl font-mono font-bold text-gray-600 mb-4 bg-gray-100 px-6 py-2 rounded-full border border-gray-200">00:00</div>
+                <!-- Timer & Coins -->
+                <div class="flex items-center space-x-4 mb-4">
+                    <div id="q-timer" class="text-xl font-mono font-bold text-gray-600 bg-gray-100 px-6 py-2 rounded-full border border-gray-200 shadow-sm">00:00</div>
+                    <div class="text-xl font-bold text-yellow-600 bg-yellow-50 px-6 py-2 rounded-full border border-yellow-300 shadow-sm flex items-center" title="累積金幣">
+                        🪙 <span id="q-coins" class="ml-2">0</span>
+                    </div>
+                </div>
 
                 <!-- Question Number -->
                 <span id="q-number" class="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2">Question 1</span>
@@ -239,9 +244,13 @@ const firebaseConfig = {
         // Quiz runtime variables
         let currentQuestions = [];
         let currentQuestionIndex = 0;
-        let score = 0;
         let timerInterval;
         let secondsElapsed = 0;
+        
+        // Reward System variables (新增金幣與過關狀態)
+        let currentCoins = { '1': 0, '2': 0, '3': 0 };
+        let typeHasWon = { '1': false, '2': false, '3': false };
+        let questionListenCount = 0;
 
         // DOM Elements
         const viewStudent = document.getElementById('view-student');
@@ -562,7 +571,10 @@ const firebaseConfig = {
                 // Randomize questions for a fresh experience each time
                 currentQuestions.sort(() => Math.random() - 0.5);
                 currentQuestionIndex = 0;
-                score = 0;
+                
+                // 更新該題型的金幣顯示
+                document.getElementById('q-coins').textContent = currentCoins[currentQuizType];
+                
                 loadQuestion();
             }
         }
@@ -582,10 +594,18 @@ const firebaseConfig = {
             const s = (totalSeconds % 60).toString().padStart(2, '0');
             return `${m}:${s}`;
         }
+        
+        // 播放語音並紀錄次數
+        function playAudioAndCount(text) {
+            questionListenCount++;
+            speak(text);
+        }
 
         function loadQuestion() {
             selfScoreBtns.classList.remove('hidden');
             qNumber.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
+            
+            questionListenCount = 0; // 重置該題的聆聽次數
             
             clearInterval(timerInterval);
             secondsElapsed = 0;
@@ -629,8 +649,8 @@ const firebaseConfig = {
                 clozeHTML += currentFullSentence[currentFullSentence.length - 1];
             }
             
-            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-5xl md:text-6xl">${clozeHTML}</div>`;
-            btnPlayAudio.onclick = () => speak(currentFullSentence);
+            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-5xl md:text-7xl break-words leading-snug">${clozeHTML}</div>`;
+            btnPlayAudio.onclick = () => playAudioAndCount(currentFullSentence);
         }
 
         function setupDictationTest(sentence) {
@@ -638,14 +658,41 @@ const firebaseConfig = {
             qPrompt.innerHTML = `<div class="text-gray-500 italic text-2xl md:text-3xl mb-4">請點擊上方發音按鈕，並在心中拼寫出聽到的句子。</div>`;
             currentFullSentence = sentence.trim(); // Store expected answer
             
-            btnPlayAudio.onclick = () => speak(currentFullSentence);
+            btnPlayAudio.onclick = () => playAudioAndCount(currentFullSentence);
         }
 
         function setupTranslationTest(data) {
-            qPrompt.innerHTML = `<div class="text-4xl md:text-5xl text-gray-800 leading-snug">${data.trim()}</div>`;
+            qPrompt.innerHTML = `<div class="text-4xl md:text-6xl text-gray-800 leading-snug break-words">${data.trim()}</div>`;
         }
 
         function nextQuestion() {
+            // 計算金幣獎勵與懲罰
+            let coinsEarned = 0;
+            let listenPenalty = Math.max(0, questionListenCount - 1); // 第一次聽不扣，第二次起每聽一次扣一分
+
+            if (currentQuizType === '1') {
+                // 題型一：15秒內5枚，超過則為3枚
+                let timeReward = (secondsElapsed <= 15) ? 5 : 3;
+                coinsEarned = timeReward - listenPenalty;
+            } else {
+                // 題型二與三：30秒內5枚，超過30秒每增加10秒扣1枚
+                let timePenalty = (secondsElapsed <= 30) ? 0 : Math.floor((secondsElapsed - 31) / 10) + 1;
+                let timeReward = Math.max(0, 5 - timePenalty); // 最低基礎得分為 0
+                coinsEarned = timeReward - listenPenalty;
+            }
+
+            // 加總並確保總金幣不為負數 (最低跌到 0 枚)
+            currentCoins[currentQuizType] = Math.max(0, currentCoins[currentQuizType] + coinsEarned);
+            
+            // 更新 UI 顯示
+            document.getElementById('q-coins').textContent = currentCoins[currentQuizType];
+
+            // 檢查過關條件 (50枚)
+            if (currentCoins[currentQuizType] >= 50 && !typeHasWon[currentQuizType]) {
+                typeHasWon[currentQuizType] = true;
+                showModal("太棒了！您已經在本次測驗中累積獲得 50 枚金幣，順利過關！🎉", "🏆 過關提示");
+            }
+
             currentQuestionIndex++;
             if (currentQuestionIndex < currentQuestions.length) {
                 loadQuestion();
