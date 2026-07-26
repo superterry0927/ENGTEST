@@ -211,12 +211,18 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Environment variables provided by Canvas
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-english-quiz';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // Dummy config for fallback if not injected
-            projectId: "dummy-project"
-        };
+        // 請將下方的 firebaseConfig 內容，替換成你在 Firebase 後台複製的設定
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDbENMxzyfGXHnTu9BQq364tOnS1HJxpLA",
+  authDomain: "engtest-e09ea.firebaseapp.com",
+  databaseURL: "https://engtest-e09ea-default-rtdb.firebaseio.com",
+  projectId: "engtest-e09ea",
+  storageBucket: "engtest-e09ea.firebasestorage.app",
+  messagingSenderId: "476694745806",
+  appId: "1:476694745806:web:e16fe9a34091981267369f",
+  measurementId: "G-RW5BWR7016"
+};
         
         let db, auth;
         let settingsDocRef; 
