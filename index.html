@@ -212,16 +212,14 @@
         // ==========================================
         // ⚠️ 請在這裡填入你的 Firebase 專案設定 ⚠️
         // ==========================================
-       const firebaseConfig = {
-  apiKey: "AIzaSyDbENMxzyfGXHnTu9BQq364tOnS1HJxpLA",
-  authDomain: "engtest-e09ea.firebaseapp.com",
-  databaseURL: "https://engtest-e09ea-default-rtdb.firebaseio.com",
-  projectId: "engtest-e09ea",
-  storageBucket: "engtest-e09ea.firebasestorage.app",
-  messagingSenderId: "476694745806",
-  appId: "1:476694745806:web:e16fe9a34091981267369f",
-  measurementId: "G-RW5BWR7016"
-};
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
         // ==========================================
 
         let db;
@@ -266,6 +264,11 @@
         let timerInterval;
         let secondsElapsed = 0;
         
+        // 賓果狀態
+        let bingoGrid = [];
+        let currentBingoIndex = -1;
+        let bingoWinFired = false;
+        
         // 金幣與聆聽次數
         let currentCoins = { '1': 0, '2': 0, '3': 0 };
         let questionListenCount = 0;
@@ -273,6 +276,7 @@
 
         const viewSelection = document.getElementById('quiz-selection');
         const viewQuiz = document.getElementById('quiz-container');
+        const viewBingo = document.getElementById('bingo-container');
         const viewLoading = document.getElementById('quiz-loading');
         const viewEmpty = document.getElementById('quiz-empty');
         const viewAdmin = document.getElementById('admin-container');
@@ -283,6 +287,7 @@
         const qPrompt = document.getElementById('q-prompt');
         const btnPlayAudio = document.getElementById('btn-play-audio');
         const btnHome = document.getElementById('btn-home');
+        const btnNext = document.getElementById('btn-next');
 
         // TTS 變數
         let synth = window.speechSynthesis;
@@ -312,9 +317,13 @@
                     }
                 }
                 
-                if (!window.quizData) {
+                if (!window.quizData || typeof window.quizData !== 'object') {
                     window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
                 }
+                if (!Array.isArray(window.quizData['vars'])) window.quizData['vars'] = [];
+                if (!Array.isArray(window.quizData['1'])) window.quizData['1'] = [];
+                if (!Array.isArray(window.quizData['2'])) window.quizData['2'] = [];
+                if (!Array.isArray(window.quizData['3'])) window.quizData['3'] = [];
 
                 populateAdminFields();
             } catch (error) {
@@ -375,10 +384,7 @@
             if (synth.speaking) synth.cancel();
             if (text === '') return;
             
-            // 【修復 a 的發音問題】 
-            // 替換單獨出現的 A 或 a 為小寫 a，避免語音引擎把它當作「大寫字母 A(ㄟ)」來發音
-            // 若為 Chrome/Google TTS，遇到小寫獨立 a 通常會正確發音為冠詞 /ə/ (呃)
-            let processedText = text.replace(/\bA\b/g, 'a');
+            let processedText = text.replace(/\bA\b/g, 'a ').replace(/\ba\b/g, 'a ');
 
             const utterThis = new SpeechSynthesisUtterance(processedText);
             const selectedOption = voiceSelect.selectedOptions[0].value;
@@ -390,6 +396,7 @@
         window.toggleAdmin = function() {
             viewSelection.classList.add('hidden');
             viewQuiz.classList.add('hidden');
+            viewBingo.classList.add('hidden');
             viewEmpty.classList.add('hidden');
             btnHome.classList.remove('hidden');
             viewAdmin.classList.remove('hidden');
@@ -399,6 +406,7 @@
             if(timerInterval) clearInterval(timerInterval);
             synth.cancel();
             viewQuiz.classList.add('hidden');
+            viewBingo.classList.add('hidden');
             viewAdmin.classList.add('hidden');
             viewEmpty.classList.add('hidden');
             btnHome.classList.add('hidden');
@@ -445,7 +453,7 @@
             });
         }
 
-        // 單字克漏字處理：保留首尾，中間挖空 (例如 apple -> a _ _ _ e)
+        // 單字克漏字處理
         function makeClozeWord(word) {
             let w = word.trim();
             if(w.length <= 1) return '_';
@@ -464,18 +472,118 @@
             if (currentQuestions.length === 0) {
                 viewEmpty.classList.remove('hidden');
             } else {
-                viewQuiz.classList.remove('hidden');
-                
-                // 【修正：三種題型全部都打亂順序 (隨機出題)】
-                currentQuestions.sort(() => Math.random() - 0.5); 
-                
-                currentQuestionIndex = 0;
-                currentQuestionNumber = 1;
-                qCoins.textContent = currentCoins[currentQuizType];
-                
-                loadQuestion();
+                if (currentQuizType === '1') {
+                    // 初始化賓果遊戲
+                    initBingo();
+                } else {
+                    // 題型二、三，線性無限測驗
+                    viewQuiz.classList.remove('hidden');
+                    currentQuestions.sort(() => Math.random() - 0.5); 
+                    currentQuestionIndex = 0;
+                    currentQuestionNumber = 1;
+                    qCoins.textContent = currentCoins[currentQuizType];
+                    btnNext.innerHTML = '下一題 ➡️';
+                    loadQuestion();
+                }
             }
         };
+
+        // ==========================================
+        // 賓果系統邏輯 (題型一專用)
+        // ==========================================
+        function initBingo() {
+            let pool = [...currentQuestions];
+            pool.sort(() => Math.random() - 0.5); // 洗牌單字庫
+            
+            bingoGrid = [];
+            // 確保生成 25 格 (不夠則循環填滿)
+            for (let i = 0; i < 25; i++) {
+                bingoGrid.push({
+                    word: pool[i % pool.length],
+                    completed: false
+                });
+            }
+            // 再次打亂排列
+            bingoGrid.sort(() => Math.random() - 0.5);
+            
+            bingoWinFired = false;
+            document.getElementById('bingo-lines-text').textContent = '0';
+            document.getElementById('bingo-coins').textContent = currentCoins['1'];
+            
+            viewBingo.classList.remove('hidden');
+            renderBingo();
+        }
+
+        function renderBingo() {
+            const gridEl = document.getElementById('bingo-grid');
+            gridEl.innerHTML = '';
+            
+            bingoGrid.forEach((cell, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'flex items-center justify-center rounded-xl shadow-md transition-all duration-200 text-3xl font-bold font-mono ';
+                
+                if (cell.completed) {
+                    // 已完成的格子
+                    btn.className += 'bg-green-500 text-white shadow-inner scale-[0.98] cursor-default';
+                    btn.innerHTML = '✔️';
+                } else {
+                    // 未完成的格子
+                    btn.className += 'bg-white text-blue-600 hover:bg-blue-100 hover:scale-105 active:scale-95 border border-blue-200';
+                    btn.innerHTML = (index + 1);
+                    btn.onclick = () => openBingoQuestion(index);
+                }
+                gridEl.appendChild(btn);
+            });
+        }
+
+        window.openBingoQuestion = function(index) {
+            currentBingoIndex = index;
+            viewBingo.classList.add('hidden');
+            viewQuiz.classList.remove('hidden');
+            
+            // 設定標題與按鈕文字
+            qNumber.textContent = `Bingo 格子 #${index + 1}`;
+            qCoins.textContent = currentCoins['1'];
+            btnNext.innerHTML = '完成，返回賓果 ➡️';
+            
+            // 啟動計時
+            clearInterval(timerInterval);
+            secondsElapsed = 0;
+            qTimer.textContent = '0';
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                qTimer.textContent = secondsElapsed;
+            }, 1000);
+
+            questionListenCount = 0;
+            let rawData = bingoGrid[index].word;
+            
+            // 處理克漏字出題
+            btnPlayAudio.classList.remove('hidden');
+            currentFullSentence = replaceVariables(rawData.trim());
+            let clozeWords = currentFullSentence.split(' ').map(makeClozeWord).join('&nbsp;&nbsp;&nbsp;');
+            
+            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-7xl md:text-8xl break-words leading-snug font-bold mb-4">${clozeWords}</div>`;
+            
+            btnPlayAudio.onclick = () => {
+                questionListenCount++;
+                speak(currentFullSentence);
+            };
+        };
+
+        function checkBingoLines() {
+            const lines = [
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // 橫線
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // 直線
+                [0,6,12,18,24], [4,8,12,16,20] // 對角線
+            ];
+            let count = 0;
+            lines.forEach(line => {
+                if (line.every(idx => bingoGrid[idx].completed)) count++;
+            });
+            return count;
+        }
+        // ==========================================
 
         function loadQuestion() {
             clearInterval(timerInterval);
@@ -488,32 +596,14 @@
 
             qNumber.textContent = `Question ${currentQuestionNumber}`;
             questionListenCount = 0;
-            
             let rawData = currentQuestions[currentQuestionIndex];
             
-            if (currentQuizType === '1') {
-                // 題型一：單字克漏字
-                btnPlayAudio.classList.remove('hidden');
-                currentFullSentence = replaceVariables(rawData.trim());
-                
-                // 處理句子中每個單字，保留首尾，中間隱藏
-                let clozeWords = currentFullSentence.split(' ').map(makeClozeWord).join('&nbsp;&nbsp;&nbsp;');
-                
-                // 放大字體
-                qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-7xl md:text-8xl break-words leading-snug font-bold mb-4">${clozeWords}</div>`;
-                
-                btnPlayAudio.onclick = () => {
-                    questionListenCount++;
-                    speak(currentFullSentence);
-                };
-            } 
-            else if (currentQuizType === '2') {
-                // 題型二：聽力答句
+            if (currentQuizType === '2') {
                 btnPlayAudio.classList.remove('hidden');
                 currentFullSentence = replaceVariables(rawData);
                 qPrompt.innerHTML = `
                     <div class="text-gray-500 italic text-4xl md:text-5xl mb-4 font-semibold leading-snug break-words">
-                        請聆聽發音，並寫出對應的答句。
+                        請點擊上方發音按鈕聆聽問句，並寫出（或口述）對應的答句。
                     </div>`;
                 btnPlayAudio.onclick = () => {
                     questionListenCount++;
@@ -521,12 +611,9 @@
                 };
             }
             else if (currentQuizType === '3') {
-                // 題型三：翻譯 (純中文)
-                btnPlayAudio.classList.add('hidden'); // 隱藏發音按鈕
+                btnPlayAudio.classList.add('hidden'); 
                 let processedSentence = replaceVariables(rawData);
-                
-                // 放大字體，支援斷行
-                qPrompt.innerHTML = `<div class="text-6xl md:text-7xl text-gray-800 leading-snug break-words font-bold mb-4">${processedSentence}</div>`;
+                qPrompt.innerHTML = `<div class="text-5xl md:text-6xl text-gray-800 leading-snug break-words font-bold mb-4">${processedSentence}</div>`;
             }
         }
 
@@ -551,20 +638,23 @@
             
             // 聆聽扣分 (第一次免費，第二次開始扣)
             let listenPenalty = Math.max(0, questionListenCount - 1);
-            if (currentQuizType === '3') listenPenalty = 0; // 題型三無聆聽
+            if (currentQuizType === '3') listenPenalty = 0;
             
             let earnedCoins = baseScore - timePenalty - listenPenalty;
-            // 單題得分最低不為負數 (最慘得 0 分)
-            earnedCoins = Math.max(0, earnedCoins);
+            earnedCoins = Math.max(0, earnedCoins); // 單題最低得 0
             
-            // 紀錄舊金幣計算是否跨越里程碑 (50的倍數)
             let previousCoins = currentCoins[currentQuizType];
             
-            // 更新總金幣 (總金幣最低 0)
+            // 更新總金幣
             currentCoins[currentQuizType] = Math.max(0, currentCoins[currentQuizType] + earnedCoins);
             qCoins.textContent = currentCoins[currentQuizType];
+            
+            // 同步更新賓果畫面的金幣
+            if(document.getElementById('bingo-coins')) {
+                document.getElementById('bingo-coins').textContent = currentCoins['1'];
+            }
 
-            // 檢查里程碑 (50, 100, 150...)
+            // 檢查金幣里程碑 (50, 100, 150...)
             let previousMilestone = Math.floor(previousCoins / 50);
             let currentMilestone = Math.floor(currentCoins[currentQuizType] / 50);
 
@@ -572,17 +662,33 @@
                 showModal(`您已經在本次測驗中累積獲得 ${currentMilestone * 50} 枚金幣！`, "🎉 達到目標里程碑", "🪙");
             }
 
-            // === 無限出題機制 ===
-            currentQuestionIndex++;
-            currentQuestionNumber++;
-            
-            if (currentQuestionIndex >= currentQuestions.length) {
-                currentQuestionIndex = 0;
-                // 一輪結束後重新洗牌
-                currentQuestions.sort(() => Math.random() - 0.5);
+            // 流程分流：賓果模式 vs 無限題型模式
+            if (currentQuizType === '1') {
+                // 標記格子為已完成，返回賓果畫面
+                bingoGrid[currentBingoIndex].completed = true;
+                viewQuiz.classList.add('hidden');
+                viewBingo.classList.remove('hidden');
+                renderBingo();
+                
+                // 檢查是否達成 5 條線過關
+                let completedLines = checkBingoLines();
+                document.getElementById('bingo-lines-text').textContent = completedLines;
+                
+                if (completedLines >= 5 && !bingoWinFired) {
+                    bingoWinFired = true;
+                    showModal("恭喜你完成 5 條賓果連線，順利過關！", "🎯 賓果達陣", "🎊");
+                }
+            } else {
+                // 題型二、三無限出題機制
+                currentQuestionIndex++;
+                currentQuestionNumber++;
+                
+                if (currentQuestionIndex >= currentQuestions.length) {
+                    currentQuestionIndex = 0;
+                    currentQuestions.sort(() => Math.random() - 0.5); // 重新洗牌
+                }
+                loadQuestion();
             }
-            
-            loadQuestion();
         };
     </script>
 </body>
