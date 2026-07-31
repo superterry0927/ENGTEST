@@ -33,7 +33,6 @@
         </div>
     </nav>
 
-    <!-- 主內容區 -->
     <main class="flex-grow container mx-auto p-4 flex flex-col items-center justify-center relative">
         
         <div id="quiz-selection" class="w-full max-w-3xl flex flex-col items-center space-y-6">
@@ -42,8 +41,8 @@
             <button onclick="startQuiz('1')" class="w-full bg-white rounded-xl shadow-lg p-6 flex items-center hover:shadow-xl hover:scale-105 transition transform duration-200 border-l-8 border-green-500">
                 <div class="text-5xl mr-6">🔤</div>
                 <div class="text-left text-gray-700">
-                    <h3 class="text-2xl font-bold mb-1">題型一：單字克漏字</h3>
-                    <p class="text-gray-500">聽發音並看提示，回想正確單字。</p>
+                    <h3 class="text-2xl font-bold mb-1">題型一：單字賓果大挑戰</h3>
+                    <p class="text-gray-500">挑戰 5x5 賓果盤！聽發音並看提示，回想正確單字完成連線。</p>
                 </div>
             </button>
             
@@ -62,6 +61,30 @@
                     <p class="text-gray-500">看中文句子，翻譯出正確的英文句。</p>
                 </div>
             </button>
+        </div>
+
+        <div id="bingo-container" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col">
+            <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
+                <div class="text-lg font-bold text-green-700 w-1/3">🎲 單字賓果遊戲</div>
+                <div class="text-center w-1/3">
+                    <span class="bg-yellow-100 text-yellow-800 font-bold px-4 py-2 rounded-full shadow-inner inline-flex items-center text-lg">
+                        🪙 <span id="bingo-coins" class="ml-2">0</span>
+                    </span>
+                </div>
+                <div class="text-right w-1/3">
+                    <span class="bg-blue-100 text-blue-800 font-bold px-4 py-2 rounded-full shadow-inner text-lg">
+                        連線數: <span id="bingo-lines-text" class="text-xl">0</span>
+                    </span>
+                </div>
+            </div>
+            <div class="p-6 md:p-10 flex flex-col items-center">
+                <h3 class="text-xl font-bold text-gray-700 mb-6 text-center">點擊數字格子挑戰單字，集滿 5 條線即可過關！</h3>
+                
+                <!-- 5x5 網格 -->
+                <div id="bingo-grid" class="grid grid-cols-5 gap-2 md:gap-4 w-full max-w-2xl aspect-square">
+                    <!-- 格子將由 JS 動態生成 -->
+                </div>
+            </div>
         </div>
 
         <div id="quiz-container" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col">
@@ -102,7 +125,6 @@
             </div>
         </div>
 
-        <!-- 載入中 / 無資料畫面 -->
         <div id="quiz-loading" class="hidden text-center p-10">
             <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
             <p class="text-xl text-gray-600">載入中...</p>
@@ -277,6 +299,7 @@ const firebaseConfig = {
         let questionListenCount = 0;
         let currentFullSentence = ""; 
 
+        // 確保抓取到所有的 DOM 元素 (包含 viewBingo)
         const viewSelection = document.getElementById('quiz-selection');
         const viewQuiz = document.getElementById('quiz-container');
         const viewBingo = document.getElementById('bingo-container');
@@ -387,6 +410,7 @@ const firebaseConfig = {
             if (synth.speaking) synth.cancel();
             if (text === '') return;
             
+            // 將單獨的 A/a 改成 "a " 以確保發出 /ə/ 而非字母發音
             let processedText = text.replace(/\bA\b/g, 'a ').replace(/\ba\b/g, 'a ');
 
             const utterThis = new SpeechSynthesisUtterance(processedText);
@@ -399,7 +423,7 @@ const firebaseConfig = {
         window.toggleAdmin = function() {
             viewSelection.classList.add('hidden');
             viewQuiz.classList.add('hidden');
-            viewBingo.classList.add('hidden');
+            if (viewBingo) viewBingo.classList.add('hidden'); // 加入防錯檢查
             viewEmpty.classList.add('hidden');
             btnHome.classList.remove('hidden');
             viewAdmin.classList.remove('hidden');
@@ -409,7 +433,7 @@ const firebaseConfig = {
             if(timerInterval) clearInterval(timerInterval);
             synth.cancel();
             viewQuiz.classList.add('hidden');
-            viewBingo.classList.add('hidden');
+            if (viewBingo) viewBingo.classList.add('hidden'); // 加入防錯檢查
             viewAdmin.classList.add('hidden');
             viewEmpty.classList.add('hidden');
             btnHome.classList.add('hidden');
@@ -513,7 +537,7 @@ const firebaseConfig = {
             document.getElementById('bingo-lines-text').textContent = '0';
             document.getElementById('bingo-coins').textContent = currentCoins['1'];
             
-            viewBingo.classList.remove('hidden');
+            if (viewBingo) viewBingo.classList.remove('hidden');
             renderBingo();
         }
 
@@ -541,7 +565,7 @@ const firebaseConfig = {
 
         window.openBingoQuestion = function(index) {
             currentBingoIndex = index;
-            viewBingo.classList.add('hidden');
+            if (viewBingo) viewBingo.classList.add('hidden');
             viewQuiz.classList.remove('hidden');
             
             // 設定標題與按鈕文字
@@ -670,7 +694,7 @@ const firebaseConfig = {
                 // 標記格子為已完成，返回賓果畫面
                 bingoGrid[currentBingoIndex].completed = true;
                 viewQuiz.classList.add('hidden');
-                viewBingo.classList.remove('hidden');
+                if (viewBingo) viewBingo.classList.remove('hidden');
                 renderBingo();
                 
                 // 檢查是否達成 5 條線過關
