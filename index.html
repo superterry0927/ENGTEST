@@ -3,238 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文綜合練習系統</title>
+    <title>英文綜合測驗系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
+        .hidden { display: none !important; }
+        /* 賓果連線的動畫特效 */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
-        /* 自訂彈出視窗動畫 */
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .bingo-pop { animation: pop 0.3s ease-in-out; }
+        
+        /* 滿5格連線時的格子發光動畫 */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); transform: scale(0.95); }
+            50% { box-shadow: 0 0 16px rgba(250, 204, 21, 1); transform: scale(1.05); }
         }
-        .animate-pop {
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+        .line-glow { animation: pulse-glow 1.5s infinite; z-index: 10; position: relative; }
+        
+        /* 過關視窗彈出動畫 */
+        .modal-show { transform: scale(1) !important; transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     </style>
 </head>
-<body class="text-gray-800 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col text-gray-800 relative">
 
-    <nav class="bg-blue-600 text-white shadow-md p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold cursor-pointer" onclick="goHome()">🎓 英文練習系統</h1>
-            <div>
-                <button id="btn-home" onclick="goHome()" class="hidden hover:bg-blue-700 px-4 py-2 rounded transition">回首頁</button>
-                <button id="btn-admin" onclick="toggleAdmin()" class="hover:bg-blue-700 px-4 py-2 rounded border border-blue-400 transition ml-2">⚙️ 管理後台</button>
-            </div>
+    <!-- 賓果過關動畫遮罩 -->
+    <div id="bingo-clear-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center transform scale-0 transition-transform duration-500" id="bingo-clear-content">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-500 mb-4">恭喜過關！</h2>
+            <p class="text-xl text-gray-600 font-bold">你已經成功完成 5 條連線！</p>
+            <button onclick="window.closeBingoClearModal()" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:-translate-y-1 transition transform">
+                繼續遊戲
+            </button>
+        </div>
+    </div>
+
+    <nav class="bg-blue-600 text-white shadow-lg p-4 flex justify-between items-center">
+        <h1 class="text-xl md:text-2xl font-bold flex items-center cursor-pointer" onclick="window.goHome()">
+            <span class="mr-2">📝</span> 英文綜合測驗
+        </h1>
+        <div class="space-x-2 flex items-center">
+            <span class="bg-yellow-400 text-yellow-900 font-bold px-3 py-1 rounded-full shadow-inner text-sm md:text-base">
+                🪙 總金幣: <span id="nav-coins">0</span>
+            </span>
+            <button onclick="window.toggleAdmin()" class="bg-blue-800 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition text-sm md:text-base">
+                ⚙️ 管理後台
+            </button>
         </div>
     </nav>
 
-    <main class="flex-grow container mx-auto p-4 flex flex-col items-center justify-center relative">
+    <div id="notification" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full shadow-xl font-bold text-lg hidden z-50 transition-opacity">
+        通知訊息
+    </div>
+
+    <main class="flex-grow flex flex-col items-center p-4 md:p-6 w-full max-w-6xl mx-auto">
         
-        <div id="quiz-selection" class="w-full max-w-3xl flex flex-col items-center space-y-6">
-            <h2 class="text-3xl font-bold text-gray-700 mb-8 text-center">請選擇今天要練習的題型</h2>
-            
-            <button onclick="startQuiz('1')" class="w-full bg-white rounded-xl shadow-lg p-6 flex items-center hover:shadow-xl hover:scale-105 transition transform duration-200 border-l-8 border-green-500">
-                <div class="text-5xl mr-6">🔤</div>
-                <div class="text-left text-gray-700">
-                    <h3 class="text-2xl font-bold mb-1">題型一：單字賓果大挑戰</h3>
-                    <p class="text-gray-500">挑戰 5x5 賓果盤！聽發音並看提示，回想正確單字完成連線。</p>
-                </div>
-            </button>
-            
-            <button onclick="startQuiz('2')" class="w-full bg-white rounded-xl shadow-lg p-6 flex items-center hover:shadow-xl hover:scale-105 transition transform duration-200 border-l-8 border-purple-500">
-                <div class="text-5xl mr-6">🎧</div>
-                <div class="text-left text-gray-700">
-                    <h3 class="text-2xl font-bold mb-1">題型二：聽力與答句</h3>
-                    <p class="text-gray-500">聆聽問句發音，寫下對應的答句。</p>
-                </div>
-            </button>
-            
-            <button onclick="startQuiz('3')" class="w-full bg-white rounded-xl shadow-lg p-6 flex items-center hover:shadow-xl hover:scale-105 transition transform duration-200 border-l-8 border-yellow-500">
-                <div class="text-5xl mr-6">📝</div>
-                <div class="text-left text-gray-700">
-                    <h3 class="text-2xl font-bold mb-1">題型三：中文翻英文</h3>
-                    <p class="text-gray-500">看中文句子，翻譯出正確的英文句。</p>
-                </div>
-            </button>
+        <div id="view-home" class="w-full flex flex-col items-center justify-center mt-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-700 mb-8 text-center">請選擇要進行的測驗類型</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                <!-- 題型一 -->
+                <button onclick="window.startBingo()" class="bg-white hover:bg-blue-50 border-t-4 border-blue-500 rounded-2xl shadow-lg p-8 flex flex-col items-center transition transform hover:-translate-y-1">
+                    <div class="text-5xl mb-4">🎲</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">單字賓果遊戲</h3>
+                    <p class="text-gray-500 text-center text-sm">25格連線挑戰，點擊聆聽發音並拼出單字！5條連線即可過關。</p>
+                </button>
+                <!-- 題型二 -->
+                <button onclick="window.startQuiz(2)" class="bg-white hover:bg-green-50 border-t-4 border-green-500 rounded-2xl shadow-lg p-8 flex flex-col items-center transition transform hover:-translate-y-1">
+                    <div class="text-5xl mb-4">🎧</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">聽音辨句測驗</h3>
+                    <p class="text-gray-500 text-center text-sm">聆聽英文問句，並寫出對應的答句。</p>
+                </button>
+                <!-- 題型三 -->
+                <button onclick="window.startQuiz(3)" class="bg-white hover:bg-purple-50 border-t-4 border-purple-500 rounded-2xl shadow-lg p-8 flex flex-col items-center transition transform hover:-translate-y-1">
+                    <div class="text-5xl mb-4">✍️</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">中翻英測驗</h3>
+                    <p class="text-gray-500 text-center text-sm">看著中文句子，練習寫出正確的英文句。</p>
+                </button>
+            </div>
         </div>
 
-        <div id="bingo-container" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col">
-            <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
-                <div class="text-lg font-bold text-green-700 w-1/3">🎲 單字賓果遊戲</div>
+        <div id="view-bingo" class="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col mt-4">
+            <div class="bg-blue-50 border-b p-3 md:p-4 flex justify-between items-center">
+                <div class="text-base md:text-lg font-bold text-blue-800 w-1/3">🎲 單字賓果挑戰</div>
                 <div class="text-center w-1/3">
-                    <span class="bg-yellow-100 text-yellow-800 font-bold px-4 py-2 rounded-full shadow-inner inline-flex items-center text-lg">
+                    <span class="bg-yellow-100 text-yellow-800 font-bold px-3 py-1 md:px-4 md:py-2 rounded-full shadow-inner inline-flex items-center text-base md:text-lg">
                         🪙 <span id="bingo-coins" class="ml-2">0</span>
                     </span>
                 </div>
                 <div class="text-right w-1/3">
-                    <span class="bg-blue-100 text-blue-800 font-bold px-4 py-2 rounded-full shadow-inner text-lg">
+                    <span class="bg-green-100 text-green-800 font-bold px-3 py-1 md:px-4 md:py-2 rounded-full shadow-inner text-base md:text-lg">
                         連線數: <span id="bingo-lines-text" class="text-xl">0</span>
                     </span>
                 </div>
             </div>
-            <div class="p-6 md:p-10 flex flex-col items-center">
-                <h3 class="text-xl font-bold text-gray-700 mb-6 text-center">點擊數字格子挑戰單字，集滿 5 條線即可過關！</h3>
-                
-                <!-- 5x5 網格 -->
-                <div id="bingo-grid" class="grid grid-cols-5 gap-2 md:gap-4 w-full max-w-2xl aspect-square">
+            <div class="p-4 flex flex-col items-center justify-center">
+                <p class="text-gray-600 mb-3 text-sm md:text-base font-bold text-center">點擊數字格子挑戰單字，集滿 5 條線即可過關！</p>
+                <!-- 網格縮小設定：max-w-md 與 gap-2 -->
+                <div id="bingo-grid" class="grid grid-cols-5 gap-1 md:gap-2 w-full max-w-sm md:max-w-md aspect-square">
                     <!-- 格子將由 JS 動態生成 -->
                 </div>
             </div>
         </div>
 
-        <div id="quiz-container" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col">
-            <!-- 資訊列：題號、金幣、計時 -->
-            <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
-                <div class="text-lg font-bold text-gray-600 w-1/3" id="q-number">Question 1</div>
+        <div id="view-quiz" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col mt-4">
+            <div class="bg-gray-50 border-b p-3 md:p-4 flex justify-between items-center">
+                <div class="text-base md:text-lg font-bold text-gray-600 w-1/3" id="q-number">Question 1</div>
                 <div class="text-center w-1/3">
-                    <span class="bg-yellow-100 text-yellow-800 font-bold px-4 py-2 rounded-full shadow-inner inline-flex items-center text-lg">
+                    <span class="bg-yellow-100 text-yellow-800 font-bold px-3 py-1 md:px-4 md:py-2 rounded-full shadow-inner inline-flex items-center text-base md:text-lg">
                         🪙 <span id="q-coins" class="ml-2">0</span>
                     </span>
                 </div>
                 <div class="text-right w-1/3">
-                    <span class="bg-blue-100 text-blue-800 font-bold px-4 py-2 rounded-full shadow-inner text-lg">
+                    <span class="bg-red-50 text-red-600 font-bold px-3 py-1 md:px-4 md:py-2 rounded-full shadow-inner text-base md:text-lg">
                         ⏱️ <span id="q-timer">0</span>s
                     </span>
                 </div>
             </div>
 
-            <!-- 題目與互動區 -->
-            <div class="p-8 flex flex-col items-center justify-center min-h-[450px] text-center">
-                
-                <!-- 發音按鈕 -->
-                <button id="btn-play-audio" class="mb-8 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full p-6 shadow-md transition transform hover:scale-110 focus:outline-none">
-                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"></path>
+            <!-- 測驗內容區塊縮減 min-h 高度 -->
+            <div class="p-4 md:p-6 flex flex-col items-center justify-center min-h-[250px] md:min-h-[300px] text-center">
+                <!-- 發音按鈕 (稍微變小) -->
+                <button id="btn-play-audio" class="mb-4 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full p-4 shadow-md transition transform hover:scale-110 focus:outline-none hidden">
+                    <svg class="w-10 h-10 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" />
                     </svg>
                 </button>
-
-                <!-- 題目顯示 -->
-                <div id="q-prompt" class="mb-10 w-full px-4">
-                    <!-- 題目內容由 JS 產生 -->
+                <div id="q-instructions" class="text-sm md:text-base text-gray-500 mb-2 font-bold"></div>
+                
+                <!-- 題目顯示 (字體縮小至 4xl/5xl，確保能放下) -->
+                <div id="q-prompt" class="text-3xl md:text-5xl font-bold text-gray-800 mb-6 w-full break-words leading-snug px-4">
+                    Prompt goes here
                 </div>
-
-                <!-- 下一題按鈕 -->
-                <button id="btn-next" onclick="nextQuestion()" class="w-full max-w-2xl bg-blue-500 hover:bg-blue-600 text-white font-bold py-6 px-8 rounded-2xl shadow-lg text-3xl transition transform hover:scale-105 mt-auto">
+                
+                <!-- 大顆的下一題按鈕 -->
+                <button id="btn-next-question" class="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1 text-lg md:text-xl">
                     下一題 ➡️
                 </button>
             </div>
         </div>
 
-        <div id="quiz-loading" class="hidden text-center p-10">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-            <p class="text-xl text-gray-600">載入中...</p>
-        </div>
-        <div id="quiz-empty" class="hidden text-center p-10 bg-white rounded-xl shadow-lg w-full max-w-2xl">
-            <div class="text-6xl mb-4">📭</div>
-            <h2 class="text-2xl font-bold text-gray-700 mb-2">目前沒有題目</h2>
-            <p class="text-gray-500">請點擊上方「管理後台」新增題目後再開始練習！</p>
-        </div>
-
-        <div id="admin-container" class="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col">
+        <div id="view-admin" class="w-full max-w-5xl bg-white rounded-xl shadow-xl overflow-hidden hidden flex-col mt-4">
             <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
-                <h2 class="text-xl font-bold">⚙️ 管理後台 (自動儲存)</h2>
-                <span class="text-sm bg-gray-700 px-3 py-1 rounded" id="db-status">檢查連線中...</span>
+                <h2 class="text-xl font-bold flex items-center">⚙️ 系統與題庫設定</h2>
+                <button onclick="window.toggleAdmin()" class="text-gray-300 hover:text-white">✕ 關閉</button>
             </div>
             
-            <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                <!-- TTS 設定 -->
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <h3 class="font-bold text-blue-800 mb-3">語音設定 (TTS)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col md:flex-row border-b">
+                <button class="admin-tab active flex-1 py-3 px-4 text-center font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50" onclick="window.switchTab('t1', this)">題型一 (單字/賓果)</button>
+                <button class="admin-tab flex-1 py-3 px-4 text-center font-bold text-gray-500 hover:bg-gray-50" onclick="window.switchTab('t2', this)">題型二 (聽寫)</button>
+                <button class="admin-tab flex-1 py-3 px-4 text-center font-bold text-gray-500 hover:bg-gray-50" onclick="window.switchTab('t3', this)">題型三 (翻譯)</button>
+                <button class="admin-tab flex-1 py-3 px-4 text-center font-bold text-gray-500 hover:bg-gray-50" onclick="window.switchTab('vars', this)">動態變數</button>
+                <button class="admin-tab flex-1 py-3 px-4 text-center font-bold text-gray-500 hover:bg-gray-50" onclick="window.switchTab('settings', this)">語音設定</button>
+            </div>
+
+            <div class="p-6 h-[500px] overflow-y-auto">
+                <!-- Tab 1 -->
+                <div id="tab-t1" class="admin-content">
+                    <p class="text-gray-600 mb-4">請輸入單字（一行一個）。前台賓果盤會隨機挑選 25 個單字排列，並自動將頭尾以外的字母變為底線（例如：apple 會變成 a _ _ _ e）。</p>
+                    <textarea id="admin-t1-text" class="w-full h-80 border rounded-lg p-3 font-mono" placeholder="apple&#10;banana&#10;cat"></textarea>
+                </div>
+                
+                <!-- Tab 2 -->
+                <div id="tab-t2" class="admin-content hidden">
+                    <p class="text-gray-600 mb-4">請輸入問句（一行一題）。前台會發音此句子，學生須想出對應的答句。支援隨機變數，例如: <code class="bg-gray-100 px-1">Where is [name]?</code></p>
+                    <textarea id="admin-t2-text" class="w-full h-80 border rounded-lg p-3 font-mono" placeholder="How are you?&#10;Where is [name] going?"></textarea>
+                </div>
+
+                <!-- Tab 3 -->
+                <div id="tab-t3" class="admin-content hidden">
+                    <p class="text-gray-600 mb-4">請輸入中文句子（一行一題）。學生看著中文，想出對應的英文句子。支援隨機變數，例如: <code class="bg-gray-100 px-1">[name]正在吃蘋果。</code></p>
+                    <textarea id="admin-t3-text" class="w-full h-80 border rounded-lg p-3 font-mono" placeholder="你好嗎？&#10;[name]去哪裡了？"></textarea>
+                </div>
+
+                <!-- Tab Vars -->
+                <div id="tab-vars" class="admin-content hidden">
+                    <p class="text-gray-600 mb-4">設定動態變數。在題庫中使用 <code class="bg-gray-100 px-1">[標籤]</code>，系統出題時會隨機替換為後方的單字。格式：<code>[標籤]=單字1, 單字2...</code></p>
+                    <textarea id="admin-vars-text" class="w-full h-80 border rounded-lg p-3 font-mono" placeholder="[name]=Tom, Mary, John, Peter&#10;[thing]=apple, book, car"></textarea>
+                </div>
+
+                <!-- Tab Settings -->
+                <div id="tab-settings" class="admin-content hidden">
+                    <div class="space-y-6 max-w-md">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">發音人物</label>
-                            <select id="tts-voice" class="w-full border-gray-300 rounded-md shadow-sm p-2 bg-white"></select>
+                            <label class="block font-bold mb-2">發音語音 (Voice)</label>
+                            <select id="setting-voice" class="w-full border p-2 rounded"></select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">語速 (<span id="rate-val">1.0</span>)</label>
-                            <input type="range" id="tts-rate" min="0.5" max="1.5" step="0.1" value="1.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+                            <label class="block font-bold mb-2">語速 (Rate) <span id="rate-val" class="text-blue-600">1.0</span></label>
+                            <input type="range" id="setting-rate" min="0.5" max="2" step="0.1" value="1" class="w-full" oninput="document.getElementById('rate-val').innerText = this.value">
                         </div>
-                    </div>
-                </div>
-
-                <!-- 隨機變數設定 -->
-                <div class="border rounded-lg overflow-hidden border-orange-200">
-                    <div class="bg-orange-50 px-4 py-3 border-b border-orange-200">
-                        <h3 class="font-bold text-orange-800">隨機變數設定 (進階)</h3>
-                        <p class="text-xs text-orange-600 mt-1">格式：<code>[變數名稱]=單字1, 單字2</code>。測驗時會自動隨機挑選套入題型二與題型三。</p>
-                    </div>
-                    <textarea id="admin-vars" class="w-full h-24 p-3 focus:outline-none font-mono text-sm" placeholder="[name]=Tom, Mary, John&#10;[thing]=apple, book, pen"></textarea>
-                </div>
-
-                <!-- Type 1 -->
-                <div class="border rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型一：單字克漏字</h3>
-                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入單字或片語。系統會自動保留頭尾字母並隱藏中間部分（例如 <code>apple</code> 變成 <code>a _ _ _ e</code>）。</p>
-                        <textarea id="admin-q1" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="apple&#10;banana&#10;computer"></textarea>
-                    </div>
-                </div>
-
-                <!-- Type 2 -->
-                <div class="border rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型二：聽力與答句</h3>
-                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入問句，可插入變數標籤。學生只會聽到聲音不會看到文字。</p>
-                        <textarea id="admin-q2" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="Where is [name] going?&#10;What time is it?"></textarea>
-                    </div>
-                </div>
-
-                <!-- Type 3 -->
-                <div class="border rounded-lg overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">題型三：中文翻英文</h3>
-                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">一行一題</span>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-sm text-gray-600 mb-2">請輸入中文句子，可插入變數標籤。學生需看中文翻譯成英文。</p>
-                        <textarea id="admin-q3" class="w-full h-40 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-sm" placeholder="[name] 今天天氣真好。&#10;這是一本好書。"></textarea>
+                        <div>
+                            <label class="block font-bold mb-2">音高 (Pitch) <span id="pitch-val" class="text-blue-600">1.0</span></label>
+                            <input type="range" id="setting-pitch" min="0" max="2" step="0.1" value="1" class="w-full" oninput="document.getElementById('pitch-val').innerText = this.value">
+                        </div>
+                        <button onclick="window.testTTS()" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold">🔊 測試發音 (Test Voice)</button>
                     </div>
                 </div>
             </div>
-            
-            <div class="bg-gray-50 p-4 border-t flex justify-end">
-                <button onclick="saveData()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow">
-                    💾 儲存所有設定
+
+            <div class="bg-gray-50 border-t p-4 flex justify-end">
+                <button onclick="window.saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition">
+                    💾 儲存設定
                 </button>
             </div>
         </div>
-
     </main>
 
-    <!-- 自訂 Alert Modal (金幣獎勵) -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="custom-modal-content">
-            <div class="p-6 text-center">
-                <div id="modal-icon" class="text-6xl mb-4">🏆</div>
-                <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-2">標題</h3>
-                <p id="modal-text" class="text-gray-600 mb-6 font-bold text-lg">內容文字</p>
-                <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition text-xl">
-                    太棒了，繼續！
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         // ==========================================
-        // ⚠️ 請在這裡填入你的 Firebase 專案設定 ⚠️
+        // 1. Firebase 設定 (可自行替換)
         // ==========================================
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+       // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDbENMxzyfGXHnTu9BQq364tOnS1HJxpLA",
   authDomain: "engtest-e09ea.firebaseapp.com",
@@ -245,299 +232,379 @@ const firebaseConfig = {
   appId: "1:476694745806:web:e16fe9a34091981267369f",
   measurementId: "G-RW5BWR7016"
 };
-        // ==========================================
 
-        let db;
-        let useLocalStorage = false;
-        
+        let app, db, auth;
+        let useFirebase = false;
+
         try {
-            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                throw new Error("尚未設定 Firebase Config，自動切換至本機儲存模式。");
-            }
-            const app = initializeApp(firebaseConfig);
+            app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            const auth = getAuth(app);
-            
-            signInAnonymously(auth).then(() => {
-                document.getElementById('db-status').textContent = '🟢 雲端資料庫已連線';
-                document.getElementById('db-status').classList.replace('bg-gray-700', 'bg-green-600');
-                loadDataFromDB();
-            }).catch((error) => {
-                console.error("Firebase 登入失敗:", error);
-                fallbackToLocal("權限阻擋，改用本機儲存");
+            auth = getAuth(app);
+            useFirebase = true;
+            signInAnonymously(auth).catch(e => {
+                console.warn("Firebase Auth blocked, falling back to LocalStorage.");
+                useFirebase = false;
             });
-        } catch (error) {
-            console.warn(error.message);
-            fallbackToLocal("本機儲存模式 (未連線雲端)");
+        } catch (e) {
+            console.warn("Firebase init failed, falling back to LocalStorage.");
+            useFirebase = false;
         }
 
-        function fallbackToLocal(msg) {
-            useLocalStorage = true;
-            document.getElementById('db-status').textContent = `🟡 ${msg}`;
-            document.getElementById('db-status').classList.replace('bg-gray-700', 'bg-yellow-600');
-            loadDataFromDB();
-        }
+        // ==========================================
+        // 2. 全域變數與資料結構
+        // ==========================================
+        let appData = {
+            t1: ["apple", "banana", "student", "teacher", "elephant", "computer", "hospital", "library", "beautiful", "wonderful"],
+            t2: ["How are you?", "Where is [name] going?", "What is this?"],
+            t3: ["你好嗎？", "[name]正在吃蘋果。"],
+            vars: "[name]=Tom, Mary, John, Peter\n[thing]=apple, book, car",
+            settings: { voiceURI: null, rate: 1, pitch: 1 }
+        };
 
-        // --- 全域變數 ---
-        window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
+        // DOM Elements
+        const viewHome = document.getElementById('view-home');
+        const viewAdmin = document.getElementById('view-admin');
+        const viewBingo = document.getElementById('view-bingo');
+        const viewQuiz = document.getElementById('view-quiz');
         
-        // 遊戲運行狀態
-        let currentQuizType = null;
+        let currentMode = 0; // 1: Bingo/Cloze, 2: Dictation, 3: Translation
         let currentQuestions = [];
-        let currentQuestionIndex = 0;
-        let currentQuestionNumber = 1;
+        let questionIndex = 0;
+        let globalCoins = 0;
+        
+        // Timer Variables
         let timerInterval;
-        let secondsElapsed = 0;
+        let currentSeconds = 0;
         
-        // 賓果狀態
-        let bingoGrid = [];
-        let currentBingoIndex = -1;
-        let bingoWinFired = false;
-        
-        // 金幣與聆聽次數
-        let currentCoins = { '1': 0, '2': 0, '3': 0 };
+        // Quiz State Variables
         let questionListenCount = 0;
-        let currentFullSentence = ""; 
-
-        // 確保抓取到所有的 DOM 元素 (包含 viewBingo)
-        const viewSelection = document.getElementById('quiz-selection');
-        const viewQuiz = document.getElementById('quiz-container');
-        const viewBingo = document.getElementById('bingo-container');
-        const viewLoading = document.getElementById('quiz-loading');
-        const viewEmpty = document.getElementById('quiz-empty');
-        const viewAdmin = document.getElementById('admin-container');
+        let currentFullSentence = "";
         
-        const qNumber = document.getElementById('q-number');
-        const qCoins = document.getElementById('q-coins');
-        const qTimer = document.getElementById('q-timer');
-        const qPrompt = document.getElementById('q-prompt');
-        const btnPlayAudio = document.getElementById('btn-play-audio');
-        const btnHome = document.getElementById('btn-home');
-        const btnNext = document.getElementById('btn-next');
+        // Bingo Variables
+        let bingoGrid = []; // Array of 25 objects: { word: '', completed: false }
+        let currentBingoCellIndex = -1;
+        let completedLines = 0;
+        let bingoLinesHistory = [];
 
-        // TTS 變數
+        // TTS Variables
         let synth = window.speechSynthesis;
         let voices = [];
-        const voiceSelect = document.getElementById('tts-voice');
-        const rateSlider = document.getElementById('tts-rate');
-        const rateVal = document.getElementById('rate-val');
 
-        async function loadDataFromDB() {
-            try {
-                if (useLocalStorage) {
-                    const saved = localStorage.getItem('englishQuizData');
-                    if (saved) {
-                        try {
-                            const parsed = JSON.parse(saved);
-                            if (parsed && typeof parsed === 'object') {
-                                window.quizData = { ...window.quizData, ...parsed };
-                            }
-                        } catch (e) {
-                            console.warn("無法解析本機殘留資料，將使用預設空資料。");
-                        }
-                    }
-                } else {
-                    const docSnap = await getDoc(doc(db, "englishQuiz", "data"));
+        // ==========================================
+        // 3. 初始化與資料存取
+        // ==========================================
+        async function loadData() {
+            if (useFirebase && auth.currentUser) {
+                try {
+                    const docRef = doc(db, "englishQuiz", "mainData");
+                    const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
-                        window.quizData = { ...window.quizData, ...docSnap.data() };
+                        const data = docSnap.data();
+                        appData = { ...appData, ...data };
+                        // Safety checks in case db has old structure
+                        if(!appData.t1) appData.t1 = [];
+                        if(!appData.t2) appData.t2 = [];
+                        if(!appData.t3) appData.t3 = [];
+                        if(!appData.vars) appData.vars = "";
+                        if(!appData.settings) appData.settings = { rate:1, pitch:1 };
                     }
+                } catch (e) {
+                    console.warn("Firebase read failed, using LocalStorage.", e);
+                    loadLocalData();
                 }
-                
-                if (!window.quizData || typeof window.quizData !== 'object') {
-                    window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
-                }
-                if (!Array.isArray(window.quizData['vars'])) window.quizData['vars'] = [];
-                if (!Array.isArray(window.quizData['1'])) window.quizData['1'] = [];
-                if (!Array.isArray(window.quizData['2'])) window.quizData['2'] = [];
-                if (!Array.isArray(window.quizData['3'])) window.quizData['3'] = [];
+            } else {
+                loadLocalData();
+            }
+            updateAdminUI();
+            updateCoinDisplay();
+        }
 
-                populateAdminFields();
-            } catch (error) {
-                console.error("讀取資料失敗:", error);
+        function loadLocalData() {
+            const local = localStorage.getItem('englishQuizData');
+            if (local) {
+                try {
+                    const parsed = JSON.parse(local);
+                    if(typeof parsed === 'object' && parsed !== null) {
+                        appData = { ...appData, ...parsed };
+                        if(!appData.t1) appData.t1 = [];
+                        if(!appData.t2) appData.t2 = [];
+                        if(!appData.t3) appData.t3 = [];
+                        if(!appData.vars) appData.vars = "";
+                        if(!appData.settings) appData.settings = { rate:1, pitch:1 };
+                    }
+                } catch(e) {
+                    console.warn("Local storage corrupted, using defaults.");
+                }
             }
         }
 
-        window.saveData = async function() {
-            const dataToSave = {
-                'vars': document.getElementById('admin-vars').value.split('\n').filter(l => l.trim() !== ''),
-                '1': document.getElementById('admin-q1').value.split('\n').filter(l => l.trim() !== ''),
-                '2': document.getElementById('admin-q2').value.split('\n').filter(l => l.trim() !== ''),
-                '3': document.getElementById('admin-q3').value.split('\n').filter(l => l.trim() !== '')
+        async function saveData() {
+            // Read from Textareas
+            appData.t1 = document.getElementById('admin-t1-text').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            appData.t2 = document.getElementById('admin-t2-text').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            appData.t3 = document.getElementById('admin-t3-text').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            appData.vars = document.getElementById('admin-vars-text').value;
+            
+            appData.settings = {
+                voiceURI: document.getElementById('setting-voice').value,
+                rate: parseFloat(document.getElementById('setting-rate').value),
+                pitch: parseFloat(document.getElementById('setting-pitch').value)
             };
-            
-            try {
-                if (useLocalStorage) {
-                    localStorage.setItem('englishQuizData', JSON.stringify(dataToSave));
-                } else {
-                    await setDoc(doc(db, "englishQuiz", "data"), dataToSave);
+
+            if (useFirebase && auth.currentUser) {
+                try {
+                    await setDoc(doc(db, "englishQuiz", "mainData"), appData);
+                    showNotification("設定已儲存到雲端！");
+                } catch (e) {
+                    console.warn("Firebase write failed, saving locally.", e);
+                    localStorage.setItem('englishQuizData', JSON.stringify(appData));
+                    showNotification("設定已儲存 (本地)！");
                 }
-                window.quizData = dataToSave;
-                showModal("設定已成功儲存！", "✅ 成功", "👍");
-            } catch (error) {
-                console.error("儲存失敗:", error);
-                showModal("儲存失敗，請檢查權限設定。", "❌ 錯誤", "⚠️");
+            } else {
+                localStorage.setItem('englishQuizData', JSON.stringify(appData));
+                showNotification("設定已儲存 (本地)！");
             }
-        };
-
-        function populateAdminFields() {
-            if (!window.quizData) window.quizData = { '1': [], '2': [], '3': [], 'vars': [] };
-            document.getElementById('admin-vars').value = (window.quizData['vars'] || []).join('\n');
-            document.getElementById('admin-q1').value = (window.quizData['1'] || []).join('\n');
-            document.getElementById('admin-q2').value = (window.quizData['2'] || []).join('\n');
-            document.getElementById('admin-q3').value = (window.quizData['3'] || []).join('\n');
+            window.toggleAdmin();
         }
 
-        function populateVoiceList() {
-            voices = synth.getVoices().filter(v => v.lang.startsWith('en'));
-            voiceSelect.innerHTML = '';
-            voices.forEach((voice, i) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.value = i;
-                if(voice.name.includes('Google') || voice.default) option.selected = true;
-                voiceSelect.appendChild(option);
+        // ==========================================
+        // 4. 動態變數處理
+        // ==========================================
+        function getVariables() {
+            let varDict = {};
+            if(!appData.vars) return varDict;
+            
+            let lines = appData.vars.split('\n');
+            lines.forEach(line => {
+                if(line.includes('=')) {
+                    let parts = line.split('=');
+                    let key = parts[0].trim(); // e.g. [name]
+                    let values = parts[1].split(',').map(s => s.trim()).filter(s=>s);
+                    varDict[key] = values;
+                }
             });
+            return varDict;
         }
-        
-        populateVoiceList();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-
-        rateSlider.oninput = () => rateVal.textContent = rateSlider.value;
-
-        window.speak = function(text) {
-            if (synth.speaking) synth.cancel();
-            if (text === '') return;
-            
-            // 將單獨的 A/a 改成 "a " 以確保發出 /ə/ 而非字母發音
-            let processedText = text.replace(/\bA\b/g, 'a ').replace(/\ba\b/g, 'a ');
-
-            const utterThis = new SpeechSynthesisUtterance(processedText);
-            const selectedOption = voiceSelect.selectedOptions[0].value;
-            utterThis.voice = voices[selectedOption];
-            utterThis.rate = parseFloat(rateSlider.value);
-            synth.speak(utterThis);
-        };
-
-        window.toggleAdmin = function() {
-            viewSelection.classList.add('hidden');
-            viewQuiz.classList.add('hidden');
-            if (viewBingo) viewBingo.classList.add('hidden'); // 加入防錯檢查
-            viewEmpty.classList.add('hidden');
-            btnHome.classList.remove('hidden');
-            viewAdmin.classList.remove('hidden');
-        };
-
-        window.goHome = function() {
-            if(timerInterval) clearInterval(timerInterval);
-            synth.cancel();
-            viewQuiz.classList.add('hidden');
-            if (viewBingo) viewBingo.classList.add('hidden'); // 加入防錯檢查
-            viewAdmin.classList.add('hidden');
-            viewEmpty.classList.add('hidden');
-            btnHome.classList.add('hidden');
-            viewSelection.classList.remove('hidden');
-        };
-
-        window.showModal = function(text, title = "提示", icon = "🏆") {
-            const modal = document.getElementById('custom-modal');
-            const content = document.getElementById('custom-modal-content');
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-text').textContent = text;
-            document.getElementById('modal-icon').textContent = icon;
-            
-            modal.classList.remove('hidden');
-            content.classList.add('animate-pop');
-        };
-        
-        window.closeModal = function() {
-            const modal = document.getElementById('custom-modal');
-            const content = document.getElementById('custom-modal-content');
-            content.classList.remove('animate-pop');
-            modal.classList.add('hidden');
-        };
 
         function replaceVariables(text) {
-            let processedText = text.trim();
-            let varDict = {};
-            if (window.quizData['vars'] && window.quizData['vars'].length > 0) {
-                window.quizData['vars'].forEach(line => {
-                    let parts = line.split('=');
-                    if (parts.length >= 2) {
-                        let key = parts[0].trim();
-                        let values = parts[1].split(',').map(v => v.trim()).filter(v => v);
-                        varDict[key] = values;
+            let vars = getVariables();
+            let result = text;
+            for (const [key, values] of Object.entries(vars)) {
+                if (result.includes(key) && values.length > 0) {
+                    // Replace all occurrences with a random item
+                    while(result.includes(key)) {
+                        let randomVal = values[Math.floor(Math.random() * values.length)];
+                        result = result.replace(key, randomVal);
                     }
-                });
-            }
-            return processedText.replace(/\[.*?\]/g, function(match) {
-                if (varDict[match] && varDict[match].length > 0) {
-                    let randomIndex = Math.floor(Math.random() * varDict[match].length);
-                    return varDict[match][randomIndex];
                 }
-                return match; 
+            }
+            return result;
+        }
+
+        // ==========================================
+        // 5. 語音系統 (TTS)
+        // ==========================================
+        function populateVoices() {
+            voices = synth.getVoices();
+            const voiceSelect = document.getElementById('setting-voice');
+            voiceSelect.innerHTML = '';
+            
+            voices.forEach((voice) => {
+                if(voice.lang.includes('en') || voice.lang.includes('US') || voice.lang.includes('GB')) {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = voice.voiceURI;
+                    voiceSelect.appendChild(option);
+                }
             });
+
+            if (appData.settings && appData.settings.voiceURI) {
+                voiceSelect.value = appData.settings.voiceURI;
+            }
         }
 
-        // 單字克漏字處理
-        function makeClozeWord(word) {
-            let w = word.trim();
-            if(w.length <= 1) return '_';
-            if(w.length === 2) return w[0] + ' _';
-            return w[0] + ' ' + '_ '.repeat(w.length - 2) + w[w.length - 1];
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoices;
         }
 
-        window.startQuiz = function(type) {
-            currentQuizType = type;
-            viewSelection.classList.add('hidden');
+        // Fix isolated "a/A" pronunciation issue
+        function preprocessTextForTTS(text) {
+            let processed = text;
+            // Replace standalone A/a with something the engine reads as "uh" instead of "ay"
+            processed = processed.replace(/\bA\b/g, 'uh');
+            processed = processed.replace(/\ba\b/g, 'uh');
+            return processed;
+        }
+
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            
+            let cleanText = preprocessTextForTTS(text);
+            const utterThis = new SpeechSynthesisUtterance(cleanText);
+            
+            if (appData.settings.voiceURI) {
+                const selectedVoice = voices.find(v => v.voiceURI === appData.settings.voiceURI);
+                if (selectedVoice) utterThis.voice = selectedVoice;
+            }
+            
+            utterThis.rate = appData.settings.rate || 1;
+            utterThis.pitch = appData.settings.pitch || 1;
+            synth.speak(utterThis);
+        }
+
+        // ==========================================
+        // 6. UI 與 導航邏輯
+        // ==========================================
+        window.goHome = function() {
+            clearInterval(timerInterval);
+            synth.cancel();
+            viewHome.classList.remove('hidden');
             viewAdmin.classList.add('hidden');
-            btnHome.classList.remove('hidden');
-            
-            currentQuestions = [...(window.quizData[currentQuizType] || [])];
-            
-            if (currentQuestions.length === 0) {
-                viewEmpty.classList.remove('hidden');
+            viewQuiz.classList.add('hidden');
+            viewBingo.classList.add('hidden');
+        }
+
+        window.toggleAdmin = function() {
+            if (viewAdmin.classList.contains('hidden')) {
+                viewHome.classList.add('hidden');
+                viewQuiz.classList.add('hidden');
+                viewBingo.classList.add('hidden');
+                viewAdmin.classList.remove('hidden');
+                updateAdminUI();
             } else {
-                if (currentQuizType === '1') {
-                    // 初始化賓果遊戲
-                    initBingo();
-                } else {
-                    // 題型二、三，線性無限測驗
-                    viewQuiz.classList.remove('hidden');
-                    currentQuestions.sort(() => Math.random() - 0.5); 
-                    currentQuestionIndex = 0;
-                    currentQuestionNumber = 1;
-                    qCoins.textContent = currentCoins[currentQuizType];
-                    btnNext.innerHTML = '下一題 ➡️';
-                    loadQuestion();
+                window.goHome();
+            }
+        }
+
+        window.switchTab = function(tabId, btn) {
+            document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab').forEach(el => {
+                el.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+                el.classList.add('text-gray-500');
+            });
+            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+            btn.classList.remove('text-gray-500');
+        }
+
+        function updateAdminUI() {
+            document.getElementById('admin-t1-text').value = (appData.t1 || []).join('\n');
+            document.getElementById('admin-t2-text').value = (appData.t2 || []).join('\n');
+            document.getElementById('admin-t3-text').value = (appData.t3 || []).join('\n');
+            document.getElementById('admin-vars-text').value = appData.vars || "";
+            
+            if(appData.settings) {
+                document.getElementById('setting-rate').value = appData.settings.rate || 1;
+                document.getElementById('rate-val').innerText = appData.settings.rate || 1;
+                document.getElementById('setting-pitch').value = appData.settings.pitch || 1;
+                document.getElementById('pitch-val').innerText = appData.settings.pitch || 1;
+            }
+        }
+
+        function showNotification(msg) {
+            const notif = document.getElementById('notification');
+            notif.innerText = msg;
+            notif.classList.remove('hidden');
+            setTimeout(() => { notif.classList.add('hidden'); }, 3000);
+        }
+
+        function checkCoinMilestone(oldCoins, newCoins) {
+            let milestone = Math.floor(newCoins / 50) * 50;
+            if (milestone > 0 && Math.floor(oldCoins / 50) * 50 < milestone) {
+                setTimeout(() => {
+                    alert(`🎉 太厲害了！你已經累積了 ${milestone} 枚金幣！繼續保持！`);
+                }, 500);
+            }
+        }
+
+        function addCoins(amount) {
+            let oldCoins = globalCoins;
+            globalCoins += amount;
+            if(globalCoins < 0) globalCoins = 0; // 防呆
+            updateCoinDisplay();
+            checkCoinMilestone(oldCoins, globalCoins);
+        }
+
+        function updateCoinDisplay() {
+            document.getElementById('nav-coins').innerText = globalCoins;
+            document.getElementById('q-coins').innerText = globalCoins;
+            document.getElementById('bingo-coins').innerText = globalCoins;
+        }
+
+        // ==========================================
+        // 7. 計時器與扣分邏輯
+        // ==========================================
+        function startTimer() {
+            clearInterval(timerInterval);
+            currentSeconds = 0;
+            document.getElementById('q-timer').innerText = currentSeconds;
+            
+            timerInterval = setInterval(() => {
+                currentSeconds++;
+                document.getElementById('q-timer').innerText = currentSeconds;
+            }, 1000);
+        }
+
+        function calculateCoins() {
+            let earned = 5;
+            
+            // 時間扣分
+            if (currentMode === 1) { // Bingo 單字題：15秒內滿分，超時得3分
+                if (currentSeconds > 15) earned = 3;
+            } else { // 聽寫/翻譯：30秒內滿分，超過每10秒扣1分
+                if (currentSeconds > 30) {
+                    let penalty = Math.floor((currentSeconds - 30) / 10);
+                    earned -= penalty;
                 }
             }
-        };
+            
+            // 聆聽扣分 (第2次開始扣)
+            if (questionListenCount > 1) {
+                earned -= (questionListenCount - 1);
+            }
+            
+            if (earned < 0) earned = 0;
+            addCoins(earned);
+        }
 
         // ==========================================
-        // 賓果系統邏輯 (題型一專用)
+        // 8. 賓果遊戲邏輯 (題型一)
         // ==========================================
-        function initBingo() {
-            let pool = [...currentQuestions];
-            pool.sort(() => Math.random() - 0.5); // 洗牌單字庫
-            
-            bingoGrid = [];
-            // 確保生成 25 格 (不夠則循環填滿)
-            for (let i = 0; i < 25; i++) {
-                bingoGrid.push({
-                    word: pool[i % pool.length],
-                    completed: false
-                });
+        window.startBingo = function() {
+            let words = [...(appData.t1 || [])];
+            if (words.length === 0) {
+                alert("題庫為空！請先到管理後台設定題型一單字。");
+                return;
             }
-            // 再次打亂排列
-            bingoGrid.sort(() => Math.random() - 0.5);
+
+            // 準備 25 格的單字庫 (不夠就隨機重複補滿)
+            let selectedWords = [];
+            let pool = [...words];
+            pool.sort(() => Math.random() - 0.5);
             
-            bingoWinFired = false;
-            document.getElementById('bingo-lines-text').textContent = '0';
-            document.getElementById('bingo-coins').textContent = currentCoins['1'];
+            for(let i=0; i<25; i++) {
+                if(pool.length === 0) {
+                    pool = [...words].sort(() => Math.random() - 0.5);
+                }
+                selectedWords.push(pool.pop());
+            }
             
-            if (viewBingo) viewBingo.classList.remove('hidden');
+            // 打亂排列並初始化格子狀態 (加入 inLine 屬性來判定是否連線發光)
+            selectedWords.sort(() => Math.random() - 0.5);
+            bingoGrid = selectedWords.map(w => ({ word: w, completed: false, inLine: false }));
+            completedLines = 0;
+            bingoLinesHistory = [];
+            
+            currentMode = 1;
+            questionIndex = 0;
+            document.getElementById('bingo-lines-text').innerText = completedLines;
+            
+            viewHome.classList.add('hidden');
+            viewBingo.classList.remove('hidden');
+            viewQuiz.classList.add('hidden');
+            
+            checkBingoLines();
             renderBingo();
         }
 
@@ -547,176 +614,235 @@ const firebaseConfig = {
             
             bingoGrid.forEach((cell, index) => {
                 const btn = document.createElement('button');
-                btn.className = 'flex items-center justify-center rounded-xl shadow-md transition-all duration-200 text-3xl font-bold font-mono ';
+                // 縮小字體以適應 iPad 橫放
+                btn.className = 'flex items-center justify-center rounded-xl shadow-md transition-all duration-200 text-xl md:text-2xl font-bold font-mono py-2 md:py-3 ';
                 
-                if (cell.completed) {
-                    // 已完成的格子
-                    btn.className += 'bg-green-500 text-white shadow-inner scale-[0.98] cursor-default';
+                if (cell.inLine) {
+                    // 已經湊成連線的格子：金黃色發光、星星圖案
+                    btn.className += 'bg-yellow-400 text-yellow-900 border-2 border-yellow-500 line-glow';
+                    btn.innerHTML = '⭐';
+                } else if (cell.completed) {
+                    // 單純答對但還沒連線的格子：綠色打勾
+                    btn.className += 'bg-green-500 text-white transform scale-95 border-2 border-green-600';
                     btn.innerHTML = '✔️';
                 } else {
-                    // 未完成的格子
-                    btn.className += 'bg-white text-blue-600 hover:bg-blue-100 hover:scale-105 active:scale-95 border border-blue-200';
-                    btn.innerHTML = (index + 1);
-                    btn.onclick = () => openBingoQuestion(index);
+                    // 還沒作答的格子
+                    btn.className += 'bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 hover:-translate-y-1';
+                    btn.innerHTML = index + 1;
+                    btn.onclick = () => window.openBingoQuestion(index);
                 }
                 gridEl.appendChild(btn);
             });
         }
 
+        // 克漏字單字處理 (留下頭尾，中間變底線)
+        function makeClozeWord(word) {
+            let w = word.trim();
+            if (w.length <= 2) return w; // 太短不挖空
+            let first = w[0];
+            let last = w[w.length - 1];
+            let blanks = Array(w.length - 2).fill('_').join(' ');
+            return `${first} ${blanks} ${last}`;
+        }
+
         window.openBingoQuestion = function(index) {
-            currentBingoIndex = index;
-            if (viewBingo) viewBingo.classList.add('hidden');
+            currentBingoCellIndex = index;
+            questionListenCount = 0;
+            let rawWord = bingoGrid[index].word;
+            currentFullSentence = rawWord; // TTS needs this
+            
+            viewBingo.classList.add('hidden');
             viewQuiz.classList.remove('hidden');
             
-            // 設定標題與按鈕文字
-            qNumber.textContent = `Bingo 格子 #${index + 1}`;
-            qCoins.textContent = currentCoins['1'];
-            btnNext.innerHTML = '完成，返回賓果 ➡️';
+            document.getElementById('q-number').innerText = `Bingo #${index + 1}`;
+            document.getElementById('q-instructions').innerText = "點擊發音，並想出對應的單字";
             
-            // 啟動計時
-            clearInterval(timerInterval);
-            secondsElapsed = 0;
-            qTimer.textContent = '0';
-            timerInterval = setInterval(() => {
-                secondsElapsed++;
-                qTimer.textContent = secondsElapsed;
-            }, 1000);
-
-            questionListenCount = 0;
-            let rawData = bingoGrid[index].word;
+            const btnPlayAudio = document.getElementById('btn-play-audio');
+            const qPrompt = document.getElementById('q-prompt');
+            const btnNext = document.getElementById('btn-next-question');
             
-            // 處理克漏字出題
             btnPlayAudio.classList.remove('hidden');
-            currentFullSentence = replaceVariables(rawData.trim());
-            let clozeWords = currentFullSentence.split(' ').map(makeClozeWord).join('&nbsp;&nbsp;&nbsp;');
             
-            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-7xl md:text-8xl break-words leading-snug font-bold mb-4">${clozeWords}</div>`;
+            // 替換克漏字格式，縮小一點點避免溢出 (text-4xl md:text-5xl)
+            let cloze = makeClozeWord(rawWord);
+            qPrompt.innerHTML = `<div class="tracking-wider text-blue-600 font-mono text-4xl md:text-5xl break-words leading-snug font-bold">${cloze}</div>`;
             
             btnPlayAudio.onclick = () => {
                 questionListenCount++;
                 speak(currentFullSentence);
             };
-        };
+            
+            btnNext.innerText = "✅ 完成，返回賓果";
+            btnNext.onclick = () => {
+                clearInterval(timerInterval);
+                calculateCoins();
+                bingoGrid[currentBingoCellIndex].completed = true;
+                viewQuiz.classList.add('hidden');
+                viewBingo.classList.remove('hidden');
+                
+                // 重新計算連線狀態並重新渲染賓果盤
+                checkBingoLines();
+                renderBingo();
+            };
+            
+            startTimer();
+        }
 
         function checkBingoLines() {
-            const lines = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // 橫線
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // 直線
-                [0,6,12,18,24], [4,8,12,16,20] // 對角線
-            ];
-            let count = 0;
-            lines.forEach(line => {
-                if (line.every(idx => bingoGrid[idx].completed)) count++;
-            });
-            return count;
+            let newLines = 0;
+            
+            // 先重置所有格子的連線狀態 (清空之前的發光)
+            bingoGrid.forEach(cell => cell.inLine = false);
+            
+            // 判定函式：如果該線5格都完成，將這5格標記為 inLine=true
+            const check = (indices) => {
+                if (indices.every(i => bingoGrid[i].completed)) {
+                    newLines++;
+                    indices.forEach(i => bingoGrid[i].inLine = true);
+                }
+            };
+            
+            // Rows (橫線)
+            for(let r=0; r<5; r++) check([r*5, r*5+1, r*5+2, r*5+3, r*5+4]);
+            // Cols (直線)
+            for(let c=0; c<5; c++) check([c, c+5, c+10, c+15, c+20]);
+            // Diags (斜線)
+            check([0, 6, 12, 18, 24]);
+            check([4, 8, 12, 16, 20]);
+            
+            if(newLines > completedLines) {
+                completedLines = newLines;
+                document.getElementById('bingo-lines-text').innerText = completedLines;
+                
+                // 動畫特效：整體縮放
+                const gridEl = document.getElementById('bingo-grid');
+                gridEl.classList.add('bingo-pop');
+                setTimeout(() => gridEl.classList.remove('bingo-pop'), 300);
+            }
+            
+            // 滿5條線觸發過關動畫
+            if (completedLines >= 5 && !bingoLinesHistory.includes(5)) {
+                bingoLinesHistory.push(5);
+                setTimeout(() => {
+                    showBingoClearAnimation();
+                }, 600); // 稍微延遲讓玩家先看到連線發光
+            }
         }
+
+        function showBingoClearAnimation() {
+            const modal = document.getElementById('bingo-clear-modal');
+            const content = document.getElementById('bingo-clear-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // 延遲添加縮放 class 以觸發 CSS 過場動畫
+            setTimeout(() => {
+                content.classList.add('modal-show');
+            }, 50);
+            
+            // 朗讀慶祝語音 (需預處理以避免報錯)
+            speak("Congratulations! You passed the Bingo!");
+        }
+
+        window.closeBingoClearModal = function() {
+            const modal = document.getElementById('bingo-clear-modal');
+            const content = document.getElementById('bingo-clear-content');
+            content.classList.remove('modal-show');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
         // ==========================================
+        // 9. 一般測驗邏輯 (題型二、三)
+        // ==========================================
+        window.startQuiz = function(mode) {
+            currentMode = mode;
+            let sourceArray = mode === 2 ? appData.t2 : appData.t3;
+            
+            if (!sourceArray || sourceArray.length === 0) {
+                alert("題庫為空！請先到管理後台設定題目。");
+                return;
+            }
+
+            // Shuffle questions
+            currentQuestions = [...sourceArray].sort(() => Math.random() - 0.5);
+            questionIndex = 0;
+            
+            viewHome.classList.add('hidden');
+            viewBingo.classList.add('hidden');
+            viewQuiz.classList.remove('hidden');
+            
+            loadQuestion();
+        }
 
         function loadQuestion() {
-            clearInterval(timerInterval);
-            secondsElapsed = 0;
-            qTimer.textContent = '0';
-            timerInterval = setInterval(() => {
-                secondsElapsed++;
-                qTimer.textContent = secondsElapsed;
-            }, 1000);
+            if (questionIndex >= currentQuestions.length) {
+                // 無限出題：一輪結束後重新洗牌
+                currentQuestions = [...currentQuestions].sort(() => Math.random() - 0.5);
+                questionIndex = 0;
+                showNotification("♻️ 題目已重新洗牌！");
+            }
 
-            qNumber.textContent = `Question ${currentQuestionNumber}`;
             questionListenCount = 0;
-            let rawData = currentQuestions[currentQuestionIndex];
+            let rawData = currentQuestions[questionIndex];
             
-            if (currentQuizType === '2') {
+            const btnPlayAudio = document.getElementById('btn-play-audio');
+            const qPrompt = document.getElementById('q-prompt');
+            const btnNext = document.getElementById('btn-next-question');
+            
+            document.getElementById('q-number').innerText = `Question ${questionIndex + 1}`;
+            
+            btnNext.innerText = "下一題 ➡️";
+            btnNext.onclick = window.nextQuestion;
+            
+            if (currentMode === 2) {
+                // 聽寫
+                document.getElementById('q-instructions').innerText = "點擊發音聆聽問句，並想出對應的答句";
                 btnPlayAudio.classList.remove('hidden');
+                
                 currentFullSentence = replaceVariables(rawData);
-                qPrompt.innerHTML = `
-                    <div class="text-gray-500 italic text-4xl md:text-5xl mb-4 font-semibold leading-snug break-words">
-                        請點擊上方發音按鈕聆聽問句，並寫出（或口述）對應的答句。
-                    </div>`;
+                qPrompt.innerHTML = `<div class="text-gray-400 text-lg md:text-2xl mt-4">( 請聆聽發音 )</div>`;
+                
                 btnPlayAudio.onclick = () => {
                     questionListenCount++;
                     speak(currentFullSentence);
                 };
+            } else if (currentMode === 3) {
+                // 翻譯
+                document.getElementById('q-instructions').innerText = "看著中文，想出對應的英文句子";
+                btnPlayAudio.classList.add('hidden');
+                
+                currentFullSentence = replaceVariables(rawData);
+                // 縮小字體以確保 iPad 顯示
+                qPrompt.innerHTML = `<div class="text-blue-800 text-3xl md:text-5xl font-bold leading-snug break-words">${currentFullSentence}</div>`;
             }
-            else if (currentQuizType === '3') {
-                btnPlayAudio.classList.add('hidden'); 
-                let processedSentence = replaceVariables(rawData);
-                qPrompt.innerHTML = `<div class="text-5xl md:text-6xl text-gray-800 leading-snug break-words font-bold mb-4">${processedSentence}</div>`;
-            }
+            
+            startTimer();
         }
 
         window.nextQuestion = function() {
             clearInterval(timerInterval);
-            if (synth.speaking) synth.cancel();
+            calculateCoins();
+            questionIndex++;
+            loadQuestion();
+        }
 
-            // === 計算金幣 ===
-            let baseScore = 0;
-            let timePenalty = 0;
-            
-            if (currentQuizType === '1') {
-                // 題型一：15秒內5枚，超過得3枚
-                baseScore = (secondsElapsed <= 15) ? 5 : 3;
-            } else {
-                // 題型二、三：30秒內5枚。超過後每10秒扣1枚
-                baseScore = 5;
-                if (secondsElapsed > 30) {
-                    timePenalty = Math.ceil((secondsElapsed - 30) / 10);
-                }
-            }
-            
-            // 聆聽扣分 (第一次免費，第二次開始扣)
-            let listenPenalty = Math.max(0, questionListenCount - 1);
-            if (currentQuizType === '3') listenPenalty = 0;
-            
-            let earnedCoins = baseScore - timePenalty - listenPenalty;
-            earnedCoins = Math.max(0, earnedCoins); // 單題最低得 0
-            
-            let previousCoins = currentCoins[currentQuizType];
-            
-            // 更新總金幣
-            currentCoins[currentQuizType] = Math.max(0, currentCoins[currentQuizType] + earnedCoins);
-            qCoins.textContent = currentCoins[currentQuizType];
-            
-            // 同步更新賓果畫面的金幣
-            if(document.getElementById('bingo-coins')) {
-                document.getElementById('bingo-coins').textContent = currentCoins['1'];
-            }
+        // ==========================================
+        // 10. 輔助功能綁定
+        // ==========================================
+        window.saveSettings = saveData;
+        window.testTTS = () => speak("Hello, this is a test. Apple, banana, a book.");
 
-            // 檢查金幣里程碑 (50, 100, 150...)
-            let previousMilestone = Math.floor(previousCoins / 50);
-            let currentMilestone = Math.floor(currentCoins[currentQuizType] / 50);
-
-            if (currentMilestone > previousMilestone && currentMilestone >= 1) {
-                showModal(`您已經在本次測驗中累積獲得 ${currentMilestone * 50} 枚金幣！`, "🎉 達到目標里程碑", "🪙");
+        // 初始化
+        window.onload = async () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                populateVoices();
             }
-
-            // 流程分流：賓果模式 vs 無限題型模式
-            if (currentQuizType === '1') {
-                // 標記格子為已完成，返回賓果畫面
-                bingoGrid[currentBingoIndex].completed = true;
-                viewQuiz.classList.add('hidden');
-                if (viewBingo) viewBingo.classList.remove('hidden');
-                renderBingo();
-                
-                // 檢查是否達成 5 條線過關
-                let completedLines = checkBingoLines();
-                document.getElementById('bingo-lines-text').textContent = completedLines;
-                
-                if (completedLines >= 5 && !bingoWinFired) {
-                    bingoWinFired = true;
-                    showModal("恭喜你完成 5 條賓果連線，順利過關！", "🎯 賓果達陣", "🎊");
-                }
-            } else {
-                // 題型二、三無限出題機制
-                currentQuestionIndex++;
-                currentQuestionNumber++;
-                
-                if (currentQuestionIndex >= currentQuestions.length) {
-                    currentQuestionIndex = 0;
-                    currentQuestions.sort(() => Math.random() - 0.5); // 重新洗牌
-                }
-                loadQuestion();
-            }
+            await loadData();
         };
+
     </script>
 </body>
 </html>
