@@ -241,10 +241,6 @@ const firebaseConfig = {
             db = getFirestore(app);
             auth = getAuth(app);
             useFirebase = true;
-            signInAnonymously(auth).catch(e => {
-                console.warn("Firebase Auth blocked, falling back to LocalStorage.");
-                useFirebase = false;
-            });
         } catch (e) {
             console.warn("Firebase init failed, falling back to LocalStorage.");
             useFirebase = false;
@@ -840,6 +836,18 @@ const firebaseConfig = {
             if (typeof speechSynthesis !== 'undefined') {
                 populateVoices();
             }
+            
+            // 確保 Firebase 登入完成後，再讀取資料
+            if (useFirebase) {
+                try {
+                    await signInAnonymously(auth);
+                    console.log("Firebase 登入成功，準備抓取資料！");
+                } catch (e) {
+                    console.warn("Firebase Auth blocked, falling back to LocalStorage.", e);
+                    useFirebase = false;
+                }
+            }
+            
             await loadData();
         };
 
